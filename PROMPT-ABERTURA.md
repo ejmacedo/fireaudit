@@ -12,9 +12,9 @@ Você vai construir o FireAudit, um SaaS de auditoria e compliance de firewalls 
 2. Leia `PLANO-DESENVOLVIMENTO.md` na raiz — é o plano de execução em 14 fases (Fase 0 a Fase 13), cada uma com um "critério de pronto" verificável. **Regra fixa: siga a ordem exata do plano, uma fase por vez, e não avance para a próxima sem o critério de pronto da fase atual estar satisfeito.** Se alguma fase revelar que uma decisão anterior estava errada, pare e me avise em vez de corrigir silenciosamente.
 3. Cada fase do plano referencia o documento correspondente em `docs/specs/` (as 12 fases de especificação completas, mais o mockup HTML). Leia o trecho relevante da spec antes de implementar aquela fase — não confie só no resumo do plano.
 
-**Sobre uso do Git/GitHub, já que este repositório ainda não tem controle de versão iniciado:**
+**Sobre uso do Git/GitHub — o repositório já existe:**
 
-- Inicialize o repositório Git local e crie um repositório no GitHub (privado — este código terá segredos de arquitetura de um produto comercial ainda não lançado).
+- O Git local já está inicializado e o repositório remoto já existe no GitHub (`https://github.com/ejmacedo/fireaudit`, privado). Não rode `git init` nem crie um novo repositório — apenas continue a partir do histórico existente (`main` já tem os commits de importação da especificação e de configuração do Claude Code).
 - Estratégia de branch: trunk-based simples — `main` sempre estável e implantável, uma branch por fase do plano (ex: `fase-0-esqueleto`, `fase-1-schema-migrations`), merge para `main` só quando o critério de pronto daquela fase passar.
 - Commits seguindo Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`, `docs:`) — isso facilita gerar changelog depois e entender o histórico numa base solo.
 - Nunca commitar `.env` nem qualquer segredo em texto plano — o `.gitignore` já está configurado para isso, mas confirme antes de cada commit que nenhuma credencial (API key do pfSense, secrets de JWT/HMAC, senha do Postgres) foi incluída.
