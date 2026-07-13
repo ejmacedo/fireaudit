@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Firewall Compliance & Audit</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .sev-critical { background-color: #fee2e2; color: #991b1b; border-color: #fecaca; }
+  .sev-high { background-color: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+  .sev-medium { background-color: #fef9c3; color: #854d0e; border-color: #fef08a; }
+  .sev-low { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+<!-- NAV DE DEBUG PARA NAVEGAR ENTRE TELAS DO WIREFRAME -->
+<div class="fixed top-0 left-0 right-0 bg-gray-900 text-white text-xs py-2 px-4 flex gap-3 z-50 flex-wrap">
+  <span class="font-bold text-gray-400">WIREFRAME — navegar:</span>
+  <button onclick="showScreen('login')" class="hover:text-blue-300 underline">1. Login</button>
+  <button onclick="showScreen('onboarding')" class="hover:text-blue-300 underline">2. Onboarding</button>
+  <button onclick="showScreen('dashboard')" class="hover:text-blue-300 underline">3. Dashboard</button>
+  <button onclick="showScreen('detail')" class="hover:text-blue-300 underline">4. Detalhe Firewall</button>
+  <button onclick="showScreen('billing')" class="hover:text-blue-300 underline">5. Plano/Billing</button>
+</div>
+
+<div class="pt-10">
+
+<!-- ============ TELA 1: LOGIN ============ -->
+<div id="screen-login" class="screen active">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          FireAudit
+        </div>
+        <p class="text-gray-500 text-sm mt-1">Compliance e auditoria contínua do seu pfSense</p>
+      </div>
+      <form class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" placeholder="voce@empresa.com" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+          <input type="password" placeholder="••••••••" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <button type="button" onclick="showScreen('onboarding')" class="w-full bg-blue-600 text-white rounded-md py-2 text-sm font-semibold hover:bg-blue-700 transition">Entrar</button>
+      </form>
+      <p class="text-center text-xs text-gray-400 mt-6">Não tem conta? <a class="text-blue-600 underline" onclick="showScreen('onboarding')">Criar conta grátis</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 2: ONBOARDING / SETUP DO AGENTE ============ -->
+<div id="screen-onboarding" class="screen">
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900">Conecte seu primeiro pfSense</h1>
+      <p class="text-gray-500 text-sm mt-1">Leva cerca de 5 minutos. Siga os passos abaixo — o agente só lê configurações, nunca modifica nada no seu firewall.</p>
+    </div>
+
+    <div class="space-y-4">
+      <!-- passo 1 -->
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Instale o pacote RESTAPI no pfSense</h3>
+            <p class="text-sm text-gray-500 mt-1">System &gt; Package Manager &gt; procure "RESTAPI" e instale. Já tem instalado? Pule para o passo 2.</p>
+            <a class="text-xs text-blue-600 underline inline-block mt-2">▶ Ver vídeo (2 min)</a>
+          </div>
+        </div>
+      </div>
+      <!-- passo 2 -->
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Gere uma API Key para o usuário admin</h3>
+            <p class="text-sm text-gray-500 mt-1">System &gt; REST API &gt; Keys &gt; Add. Associe ao usuário <code class="bg-gray-100 px-1 rounded">admin</code> local.</p>
+          </div>
+        </div>
+      </div>
+      <!-- passo 3 -->
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">3</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Cole o token de ingestão e a API key abaixo</h3>
+            <p class="text-sm text-gray-500 mt-1 mb-3">Vamos gerar o script pronto pra você colar no Cron do pfSense.</p>
+            <div class="grid grid-cols-1 gap-2">
+              <input type="text" placeholder="API Key do pfSense" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+              <input type="text" placeholder="IP local do pfSense (ex: 192.168.1.254:8443)" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- passo 4 -->
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">4</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Copie o script gerado no Cron do pfSense</h3>
+            <p class="text-sm text-gray-500 mt-1 mb-2">Services &gt; Cron &gt; Add. Rodar a cada 15 minutos.</p>
+            <div class="bg-gray-900 text-green-400 text-xs font-mono rounded-md p-3 overflow-x-auto">
+              #!/bin/sh<br>
+              curl -s -H "X-API-Key: SEU_TOKEN_AQUI" http://192.168.1.254:8443/api/v2/firewall/rules \<br>
+              &nbsp;&nbsp;| curl -s -X POST -d @- https://api.fireaudit.io/ingest/TOKEN_DA_SUA_CONTA
+            </div>
+            <button class="text-xs text-blue-600 underline mt-2">Copiar script</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+        Travou em algum passo? <a class="underline font-medium">Agende 15 min com o suporte</a> (resposta em até 1 dia útil, fora do nosso horário comercial local).
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+      <button onclick="showScreen('dashboard')" class="bg-blue-600 text-white rounded-md px-5 py-2 text-sm font-semibold hover:bg-blue-700">Já configurei, ver meu dashboard →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 3: DASHBOARD PRINCIPAL ============ -->
+<div id="screen-dashboard" class="screen">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-56 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+      <div class="p-4 text-white font-bold text-lg border-b border-gray-800">FireAudit</div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded bg-gray-800 text-white font-medium">Firewalls</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Achados (Findings)</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Relatórios</a>
+        <a onclick="showScreen('billing')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">Plano &amp; Cobrança</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Configurações</a>
+      </nav>
+      <div class="p-3 border-t border-gray-800 text-xs text-gray-500">eduardo@empresa.com</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Seus firewalls</h1>
+          <p class="text-sm text-gray-500">Última sincronização: há 4 minutos</p>
+        </div>
+        <button onclick="showScreen('onboarding')" class="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-blue-700">+ Adicionar firewall</button>
+      </div>
+
+      <!-- resumo cards -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Firewalls monitorados</p>
+          <p class="text-2xl font-bold text-gray-900">3</p>
+        </div>
+        <div class="bg-white border border-red-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Achados críticos</p>
+          <p class="text-2xl font-bold text-red-600">2</p>
+        </div>
+        <div class="bg-white border border-orange-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Certificados expirando</p>
+          <p class="text-2xl font-bold text-orange-600">1</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Plano atual</p>
+          <p class="text-lg font-bold text-gray-900">Starter <span class="text-xs text-gray-400 font-normal">até 5 firewalls</span></p>
+        </div>
+      </div>
+
+      <!-- lista de firewalls -->
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">Nome</th>
+              <th class="text-left px-4 py-3">Versão</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Achados</th>
+              <th class="text-left px-4 py-3">Último check-in</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="showScreen('detail')">
+              <td class="px-4 py-3 font-medium text-gray-900">eros (matriz)</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.7.2</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-green-700"><span class="w-2 h-2 rounded-full bg-green-500"></span>Online</span></td>
+              <td class="px-4 py-3">
+                <span class="text-xs px-2 py-0.5 rounded border sev-critical mr-1">2 críticos</span>
+                <span class="text-xs px-2 py-0.5 rounded border sev-medium">3 médios</span>
+              </td>
+              <td class="px-4 py-3 text-gray-500">há 4 min</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+            <tr class="hover:bg-gray-50 cursor-pointer">
+              <td class="px-4 py-3 font-medium text-gray-900">filial-sul</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.7.0</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-green-700"><span class="w-2 h-2 rounded-full bg-green-500"></span>Online</span></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded border sev-low">Nenhum achado</span></td>
+              <td class="px-4 py-3 text-gray-500">há 12 min</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+            <tr class="hover:bg-gray-50 cursor-pointer">
+              <td class="px-4 py-3 font-medium text-gray-900">lab-teste</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.6.0</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-gray-500"><span class="w-2 h-2 rounded-full bg-gray-400"></span>Sem check-in há 2 dias</span></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded border sev-high">Versão desatualizada</span></td>
+              <td class="px-4 py-3 text-gray-500">há 2 dias</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ TELA 4: DETALHE DE UM FIREWALL ============ -->
+<div id="screen-detail" class="screen">
+  <div class="flex min-h-screen">
+    <aside class="w-56 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+      <div class="p-4 text-white font-bold text-lg border-b border-gray-800">FireAudit</div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a onclick="showScreen('dashboard')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">← Voltar aos firewalls</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="mb-6">
+        <div class="flex items-center gap-2 text-sm text-gray-400">
+          <a onclick="showScreen('dashboard')" class="hover:underline cursor-pointer">Firewalls</a> / <span class="text-gray-700">eros (matriz)</span>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <h1 class="text-xl font-bold text-gray-900">eros (matriz) — pfSense CE 2.7.2</h1>
+          <span class="text-xs text-gray-500">IP interno: 192.168.1.254 · Última sync: há 4 min</span>
+        </div>
+      </div>
+
+      <!-- tabs de categoria -->
+      <div class="flex gap-2 mb-4 border-b border-gray-200">
+        <button class="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Todos (6)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">Regras arriscadas (3)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">Certificados (1)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">CVE / versão (1)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">Drift de config (1)</button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- achado crítico 1 -->
+        <div class="bg-white border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-critical shrink-0">CRÍTICO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Porta de gerenciamento SSH exposta sem restrição de origem</h3>
+            <p class="text-sm text-gray-600 mt-1">Regra na interface LAN permite acesso à porta 22 (SSH) de <code class="bg-gray-100 px-1 rounded">192.168.1.0/24</code> sem restringir a IPs específicos de administração.</p>
+            <p class="text-xs text-gray-400 mt-2">Detectado em: 2026-07-08 · Regra: "PASS 192.168.1.0/24 → 192.168.1.254:22"</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <!-- achado crítico 2 -->
+        <div class="bg-white border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-critical shrink-0">CRÍTICO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Protocolo PPTP habilitado (inseguro/descontinuado)</h3>
+            <p class="text-sm text-gray-600 mt-1">Regra libera PPTP (TCP 1723 + GRE 47) na interface LAN. PPTP tem vulnerabilidades conhecidas e não deve mais ser usado.</p>
+            <p class="text-xs text-gray-400 mt-2">Detectado em: 2026-07-08 · Recomendação: migrar para WireGuard ou OpenVPN</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <!-- achado alto -->
+        <div class="bg-white border border-orange-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-high shrink-0">ALTO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Certificado expira em 12 dias</h3>
+            <p class="text-sm text-gray-600 mt-1">Certificado usado na interface WAN (GUI HTTPS) expira em 2026-07-20. Renove antes do vencimento para evitar interrupção de acesso administrativo.</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <!-- achado médio -->
+        <div class="bg-white border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-medium shrink-0">MÉDIO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Regra "any → any" ativa na interface OPT1</h3>
+            <p class="text-sm text-gray-600 mt-1">Interface OPT1 (SIPVIVO) permite todo tráfego sem restrição de origem ou destino.</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <!-- achado médio drift -->
+        <div class="bg-white border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-medium shrink-0">MÉDIO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Configuração alterada desde a última coleta</h3>
+            <p class="text-sm text-gray-600 mt-1">2 regras novas adicionadas na interface LAN entre a coleta de ontem e a de hoje. <a class="text-blue-600 underline">Ver diff completo</a></p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <!-- achado baixo -->
+        <div class="bg-white border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-low shrink-0">BAIXO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">2 regras duplicadas encontradas (alias "Google")</h3>
+            <p class="text-sm text-gray-600 mt-1">Duas regras com o mesmo alias e finalidade — considere consolidar para reduzir complexidade.</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button class="bg-gray-900 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-gray-800">Exportar relatório PDF</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ TELA 5: PLANO / BILLING ============ -->
+<div id="screen-billing" class="screen">
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <button onclick="showScreen('dashboard')" class="text-sm text-blue-600 mb-4">← Voltar</button>
+    <h1 class="text-xl font-bold text-gray-900 mb-1">Plano &amp; Cobrança</h1>
+    <p class="text-sm text-gray-500 mb-6">Você está no plano <strong>Starter</strong> — próxima cobrança em 2026-08-08.</p>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div class="border-2 border-gray-200 rounded-lg p-5">
+        <h3 class="font-bold text-gray-900">Free</h3>
+        <p class="text-2xl font-bold mt-2">$0<span class="text-sm text-gray-400 font-normal">/mês</span></p>
+        <p class="text-xs text-gray-500 mt-1">1 firewall</p>
+        <ul class="text-sm text-gray-600 mt-4 space-y-1">
+          <li>✓ As 4 checagens básicas</li>
+          <li>✓ Alertas por email</li>
+          <li>✗ Relatório PDF</li>
+        </ul>
+      </div>
+      <div class="border-2 border-blue-600 rounded-lg p-5 relative">
+        <span class="absolute -top-3 left-4 bg-blue-600 text-white text-xs px-2 py-0.5 rounded">Seu plano atual</span>
+        <h3 class="font-bold text-gray-900">Starter</h3>
+        <p class="text-2xl font-bold mt-2">$19<span class="text-sm text-gray-400 font-normal">/mês</span></p>
+        <p class="text-xs text-gray-500 mt-1">Até 5 firewalls</p>
+        <ul class="text-sm text-gray-600 mt-4 space-y-1">
+          <li>✓ Tudo do Free</li>
+          <li>✓ Relatório PDF exportável</li>
+          <li>✓ Histórico de 90 dias</li>
+        </ul>
+      </div>
+      <div class="border-2 border-gray-200 rounded-lg p-5">
+        <h3 class="font-bold text-gray-900">MSP</h3>
+        <p class="text-2xl font-bold mt-2">$49<span class="text-sm text-gray-400 font-normal">/mês</span></p>
+        <p class="text-xs text-gray-500 mt-1">Até 20 firewalls, multi-cliente</p>
+        <ul class="text-sm text-gray-600 mt-4 space-y-1">
+          <li>✓ Tudo do Starter</li>
+          <li>✓ Relatório com sua marca</li>
+          <li>✓ Múltiplas contas de cliente</li>
+        </ul>
+        <button class="w-full mt-4 bg-blue-600 text-white rounded-md py-1.5 text-sm font-semibold hover:bg-blue-700">Fazer upgrade</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>

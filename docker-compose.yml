@@ -1,0 +1,78 @@
+# Esqueleto de infra local — FireAudit
+# Referência: docs/specs/fase9-10-performance-infra.md (seção 2.1)
+#
+# Este arquivo é o ponto de partida esperado pela Fase 0 do PLANO-DESENVOLVIMENTO.md.
+# Os Dockerfiles referenciados (backend/Dockerfile, frontend/Dockerfile) ainda não existem —
+# devem ser criados junto com o esqueleto de cada serviço (Fase 0 do plano).
+#
+# Deliberadamente sem: Kubernetes, réplica de leitura, Redis (só entra quando o gatilho
+# documentado na Fase 9-10 aparecer — não adicionar preventivamente).
+
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fireaudit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fireaudit}
+      POSTGRES_DB: ${POSTGRES_DB:-fireaudit}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fireaudit}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: python -m app.workers.snapshot_worker
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:

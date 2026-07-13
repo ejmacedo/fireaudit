@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireAudit — Mockup completo de telas (Individual + Multiempresa)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .sev-critical { background-color: #fee2e2; color: #991b1b; border-color: #fecaca; }
+  .sev-high { background-color: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+  .sev-medium { background-color: #fef9c3; color: #854d0e; border-color: #fef08a; }
+  .sev-low { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+  .company-card { transition: box-shadow .15s, transform .15s; }
+  .company-card:hover { box-shadow: 0 8px 20px -6px rgba(0,0,0,0.15); transform: translateY(-2px); }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+<!-- NAV DE DEBUG PARA NAVEGAR ENTRE TELAS DO MOCKUP -->
+<div class="fixed top-0 left-0 right-0 bg-gray-900 text-white text-xs py-2 px-4 flex gap-2 z-50 flex-wrap items-center">
+  <span class="font-bold text-gray-400 mr-1">MOCKUP — navegar:</span>
+  <button onclick="showScreen('account-type')" class="hover:text-blue-300 underline">1.Tipo conta</button>
+  <button onclick="showScreen('signup-individual')" class="hover:text-blue-300 underline">2.Cadastro Individual</button>
+  <button onclick="showScreen('signup-multi')" class="hover:text-blue-300 underline">3.Cadastro Multiempresa</button>
+  <button onclick="showScreen('login')" class="hover:text-blue-300 underline">4.Login</button>
+  <button onclick="showScreen('onboarding')" class="hover:text-blue-300 underline">5.Onboarding agente</button>
+  <button onclick="showScreen('dash-individual')" class="hover:text-blue-300 underline">6.Dashboard Individual</button>
+  <button onclick="showScreen('dash-multi-empresas')" class="hover:text-blue-300 underline">7.Multiempresa: empresas</button>
+  <button onclick="showScreen('dash-multi-firewalls')" class="hover:text-blue-300 underline">8.Multiempresa: firewalls</button>
+  <button onclick="showScreen('detail')" class="hover:text-blue-300 underline">9.Detalhe firewall</button>
+  <button onclick="showScreen('api-config')" class="hover:text-blue-300 underline">10.Config. API/Agente</button>
+  <button onclick="showScreen('alerts-config')" class="hover:text-blue-300 underline">11.Alertas</button>
+  <button onclick="showScreen('billing-individual')" class="hover:text-blue-300 underline">12.Billing Individual</button>
+  <button onclick="showScreen('billing-multi')" class="hover:text-blue-300 underline">13.Billing Multiempresa</button>
+  <button onclick="showScreen('blocked')" class="hover:text-blue-300 underline">14.Trava 2ª empresa</button>
+</div>
+
+<div class="pt-11">
+
+<!-- ============ TELA 1: ESCOLHA DO TIPO DE CONTA ============ -->
+<div id="screen-account-type" class="screen active">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900 p-6">
+    <div class="w-full max-w-3xl">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-2 text-3xl font-bold text-white">
+          <svg class="w-9 h-9 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          FireAudit
+        </div>
+        <p class="text-gray-400 text-sm mt-2">Antes de começar, nos diga como você vai usar o FireAudit — isso define sua estrutura de conta e cobrança.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-5">
+        <button onclick="showScreen('signup-individual')" class="company-card text-left bg-white rounded-xl p-6 border-2 border-transparent hover:border-blue-500">
+          <div class="w-11 h-11 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2M5 21h2m0 0h10M9 7h1m4 0h1m-5 4h1m4 0h1m-5 4h1m4 0h1"/></svg>
+          </div>
+          <h3 class="font-bold text-gray-900 text-lg">Gestor de 1 empresa</h3>
+          <p class="text-sm text-gray-500 mt-1">Você é coordenador/analista de TI e administra o(s) firewall(s) da empresa em que trabalha.</p>
+          <ul class="text-xs text-gray-500 mt-3 space-y-1">
+            <li>✓ Firewalls ilimitados dentro da sua empresa</li>
+            <li>✓ Planos Free, Pro e Premium por profundidade de acesso</li>
+          </ul>
+          <span class="inline-block mt-4 text-sm font-semibold text-blue-600">Criar Conta Individual →</span>
+        </button>
+
+        <button onclick="showScreen('signup-multi')" class="company-card text-left bg-white rounded-xl p-6 border-2 border-transparent hover:border-blue-500">
+          <div class="w-11 h-11 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8zm6 4v-2a4 4 0 00-3-3.87M7 10.13A4 4 0 117 2a4 4 0 010 8.13z"/></svg>
+          </div>
+          <h3 class="font-bold text-gray-900 text-lg">Consultor / MSP multiempresa</h3>
+          <p class="text-sm text-gray-500 mt-1">Você administra o pfSense de várias empresas-cliente diferentes, cada uma com seus próprios firewalls.</p>
+          <ul class="text-xs text-gray-500 mt-3 space-y-1">
+            <li>✓ 1ª empresa já em profundidade total</li>
+            <li>✓ Empresas adicionais com desconto por volume</li>
+          </ul>
+          <span class="inline-block mt-4 text-sm font-semibold text-purple-600">Criar Conta Multiempresa →</span>
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-gray-500 mt-6">Já tem conta? <a onclick="showScreen('login')" class="text-blue-400 underline cursor-pointer">Entrar</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 2: CADASTRO — CONTA INDIVIDUAL ============ -->
+<div id="screen-signup-individual" class="screen">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900 p-6">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
+      <button onclick="showScreen('account-type')" class="text-xs text-gray-400 hover:text-gray-600 mb-3">← Trocar tipo de conta</button>
+      <div class="mb-5">
+        <span class="inline-block text-xs font-semibold px-2 py-1 rounded bg-blue-100 text-blue-700 mb-2">Conta Individual</span>
+        <h1 class="text-xl font-bold text-gray-900">Crie sua conta</h1>
+        <p class="text-sm text-gray-500 mt-1">Dados da sua empresa (a única organização vinculada a esta conta).</p>
+      </div>
+      <form class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Seu nome</label>
+            <input type="text" value="Marcos Andrade" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Cargo</label>
+            <input type="text" value="Analista de TI" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Email corporativo</label>
+          <input type="email" value="marcos@blackwoodretail.com" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Senha</label>
+          <input type="password" placeholder="••••••••" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <hr class="my-2">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Dados da empresa</p>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Nome da empresa</label>
+          <input type="text" value="Blackwood Retail Group" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">País</label>
+            <select class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+              <option>Estados Unidos</option>
+              <option>Reino Unido</option>
+              <option selected>Brasil</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Identificador fiscal (opcional)</label>
+            <input type="text" placeholder="CNPJ / EIN / VAT" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+          </div>
+        </div>
+        <div class="bg-blue-50 border border-blue-100 rounded-md p-3 text-xs text-blue-800 mt-2">
+          Sua conta ficará vinculada a <strong>esta única empresa</strong>. Se um dia você passar a atender outra empresa também, será necessário migrar para uma Conta Multiempresa.
+        </div>
+        <button type="button" onclick="showScreen('onboarding')" class="w-full bg-blue-600 text-white rounded-md py-2.5 text-sm font-semibold hover:bg-blue-700 mt-3">Criar conta grátis</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 3: CADASTRO — CONTA MULTIEMPRESA ============ -->
+<div id="screen-signup-multi" class="screen">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900 p-6">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-8">
+      <button onclick="showScreen('account-type')" class="text-xs text-gray-400 hover:text-gray-600 mb-3">← Trocar tipo de conta</button>
+      <div class="mb-5">
+        <span class="inline-block text-xs font-semibold px-2 py-1 rounded bg-purple-100 text-purple-700 mb-2">Conta Multiempresa</span>
+        <h1 class="text-xl font-bold text-gray-900">Crie sua conta de consultoria</h1>
+        <p class="text-sm text-gray-500 mt-1">Confirmamos que você é uma pessoa jurídica prestando serviço a terceiros.</p>
+      </div>
+      <form class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Seu nome</label>
+            <input type="text" value="Priya Chandran" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" value="priya@chandranit.com" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Senha</label>
+          <input type="password" placeholder="••••••••" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <hr class="my-2">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Dados da consultoria</p>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Nome da consultoria</label>
+          <input type="text" value="Chandran IT Consulting" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">País</label>
+            <select class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+              <option selected>Estados Unidos</option>
+              <option>Reino Unido</option>
+              <option>Brasil</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Identificador fiscal <span class="text-red-500">*</span></label>
+            <input type="text" value="EIN 84-3021957" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+            <p class="text-[11px] text-gray-400 mt-1">CNPJ, EIN, VAT number ou equivalente no seu país.</p>
+          </div>
+        </div>
+        <div class="bg-purple-50 border border-purple-100 rounded-md p-3 text-xs text-purple-800 mt-2">
+          Você poderá adicionar quantas empresas-cliente precisar. A 1ª já vem em profundidade total incluída; empresas adicionais são cobradas por empresa, com desconto por volume — ver detalhes no billing.
+        </div>
+        <button type="button" onclick="showScreen('onboarding')" class="w-full bg-purple-600 text-white rounded-md py-2.5 text-sm font-semibold hover:bg-purple-700 mt-3">Criar Conta Multiempresa</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 4: LOGIN ============ -->
+<div id="screen-login" class="screen">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          FireAudit
+        </div>
+        <p class="text-gray-500 text-sm mt-1">Compliance e auditoria contínua do seu pfSense</p>
+      </div>
+      <form class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" placeholder="voce@empresa.com" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+          <input type="password" placeholder="••••••••" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div class="flex gap-2 text-xs text-gray-500">
+          <span>Entrar como:</span>
+          <a onclick="showScreen('dash-individual')" class="text-blue-600 underline cursor-pointer">Marcos (Individual)</a>
+          <span>ou</span>
+          <a onclick="showScreen('dash-multi-empresas')" class="text-purple-600 underline cursor-pointer">Priya (Multiempresa)</a>
+        </div>
+        <button type="button" onclick="showScreen('dash-individual')" class="w-full bg-blue-600 text-white rounded-md py-2 text-sm font-semibold hover:bg-blue-700 transition">Entrar</button>
+      </form>
+      <p class="text-center text-xs text-gray-400 mt-6">Não tem conta? <a class="text-blue-600 underline cursor-pointer" onclick="showScreen('account-type')">Criar conta grátis</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 5: ONBOARDING / SETUP DO AGENTE ============ -->
+<div id="screen-onboarding" class="screen">
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-900">Conecte seu primeiro pfSense</h1>
+      <p class="text-gray-500 text-sm mt-1">Leva cerca de 5 minutos. O agente só lê configurações, nunca modifica nada no seu firewall.</p>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Dê um nome a este firewall</h3>
+            <p class="text-sm text-gray-500 mt-1 mb-2">Esse nome aparece em todos os dashboards e relatórios.</p>
+            <input type="text" value="Blackwood-Matriz" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm max-w-sm">
+          </div>
+        </div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Instale o pacote RESTAPI no pfSense</h3>
+            <p class="text-sm text-gray-500 mt-1">System &gt; Package Manager &gt; procure "RESTAPI" e instale. Já tem instalado? Pule para o passo 3.</p>
+            <a class="text-xs text-blue-600 underline inline-block mt-2">▶ Ver vídeo (2 min)</a>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">3</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Gere uma API Key para o usuário admin</h3>
+            <p class="text-sm text-gray-500 mt-1">System &gt; REST API &gt; Keys &gt; Add. Associe ao usuário <code class="bg-gray-100 px-1 rounded">admin</code> local. Essa chave fica só no seu pfSense — nunca é enviada para a nuvem.</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-lg p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">4</div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">Copie o script já com seu token de ingestão embutido</h3>
+            <p class="text-sm text-gray-500 mt-1 mb-2">Services &gt; Cron &gt; Add. Rodar a cada 15 minutos.</p>
+            <div class="bg-gray-900 text-green-400 text-xs font-mono rounded-md p-3 overflow-x-auto">
+              #!/bin/sh<br>
+              curl -s -H "X-API-Key: SUA_API_KEY_LOCAL" http://192.168.1.254:8443/api/v2/firewall/rules \<br>
+              &nbsp;&nbsp;| curl -s -X POST -H "Authorization: Bearer fa_ingest_8f2a91cd6e" -d @- https://api.fireaudit.io/v1/ingest
+            </div>
+            <div class="flex gap-2 mt-2">
+              <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5">Copiar script</button>
+              <button onclick="showScreen('api-config')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5">Testar agora</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+        Travou em algum passo? <a class="underline font-medium">Agende 15 min com o suporte</a> (resposta em até 1 dia útil).
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+      <button onclick="showScreen('dash-individual')" class="bg-blue-600 text-white rounded-md px-5 py-2 text-sm font-semibold hover:bg-blue-700">Já configurei, ver meu dashboard →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 6: DASHBOARD — CONTA INDIVIDUAL ============ -->
+<div id="screen-dash-individual" class="screen">
+  <div class="flex min-h-screen">
+    <aside class="w-56 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+      <div class="p-4 text-white font-bold text-lg border-b border-gray-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        FireAudit
+      </div>
+      <div class="px-4 py-3 border-b border-gray-800">
+        <p class="text-xs text-gray-500">Empresa</p>
+        <p class="text-sm font-semibold text-white">Blackwood Retail Group</p>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded bg-gray-800 text-white font-medium">Firewalls</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Achados (Findings)</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Relatórios</a>
+        <a onclick="showScreen('alerts-config')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">Alertas</a>
+        <a onclick="showScreen('billing-individual')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">Plano &amp; Cobrança</a>
+      </nav>
+      <div class="p-3 border-t border-gray-800 text-xs text-gray-500">marcos@blackwoodretail.com<br><span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-blue-900 text-blue-300 text-[10px]">Conta Individual · Pro</span></div>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Seus firewalls</h1>
+          <p class="text-sm text-gray-500">Última sincronização: há 4 minutos</p>
+        </div>
+        <button onclick="showScreen('onboarding')" class="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-blue-700">+ Adicionar firewall</button>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Firewalls monitorados</p>
+          <p class="text-2xl font-bold text-gray-900">2</p>
+        </div>
+        <div class="bg-white border border-red-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Achados críticos</p>
+          <p class="text-2xl font-bold text-red-600">2</p>
+        </div>
+        <div class="bg-white border border-orange-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Certificados expirando</p>
+          <p class="text-2xl font-bold text-orange-600">1</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+          <p class="text-xs text-gray-500">Plano atual</p>
+          <p class="text-lg font-bold text-gray-900">Pro <span class="text-xs text-gray-400 font-normal">firewalls ilimitados</span></p>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">Nome</th>
+              <th class="text-left px-4 py-3">Versão</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Achados</th>
+              <th class="text-left px-4 py-3">Último check-in</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="showScreen('detail')">
+              <td class="px-4 py-3 font-medium text-gray-900">Blackwood-Matriz</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.7.2</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-green-700"><span class="w-2 h-2 rounded-full bg-green-500"></span>Online</span></td>
+              <td class="px-4 py-3">
+                <span class="text-xs px-2 py-0.5 rounded border sev-critical mr-1">2 críticos</span>
+                <span class="text-xs px-2 py-0.5 rounded border sev-medium">3 médios</span>
+              </td>
+              <td class="px-4 py-3 text-gray-500">há 4 min</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+            <tr class="hover:bg-gray-50 cursor-pointer">
+              <td class="px-4 py-3 font-medium text-gray-900">Blackwood-CD-Norte</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.7.0</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-green-700"><span class="w-2 h-2 rounded-full bg-green-500"></span>Online</span></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded border sev-low">Nenhum achado</span></td>
+              <td class="px-4 py-3 text-gray-500">há 12 min</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 bg-white border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-700">Precisa gerenciar o firewall de outra empresa também?</p>
+          <p class="text-xs text-gray-500">Sua Conta Individual está vinculada só à Blackwood Retail Group.</p>
+        </div>
+        <button onclick="showScreen('blocked')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 font-medium">+ Adicionar empresa</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ TELA 7: DASHBOARD MULTIEMPRESA — SELETOR DE EMPRESAS ============ -->
+<div id="screen-dash-multi-empresas" class="screen">
+  <div class="flex min-h-screen">
+    <aside class="w-56 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+      <div class="p-4 text-white font-bold text-lg border-b border-gray-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        FireAudit
+      </div>
+      <div class="px-4 py-3 border-b border-gray-800">
+        <p class="text-xs text-gray-500">Consultoria</p>
+        <p class="text-sm font-semibold text-white">Chandran IT Consulting</p>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded bg-gray-800 text-white font-medium">Empresas-cliente</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Relatórios (por empresa)</a>
+        <a onclick="showScreen('billing-multi')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">Plano &amp; Cobrança</a>
+      </nav>
+      <div class="p-3 border-t border-gray-800 text-xs text-gray-500">priya@chandranit.com<br><span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-purple-900 text-purple-300 text-[10px]">Conta Multiempresa</span></div>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Suas empresas-cliente</h1>
+          <p class="text-sm text-gray-500">4 empresas · todas em profundidade total</p>
+        </div>
+        <button class="bg-purple-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-purple-700">+ Adicionar empresa</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div onclick="showScreen('dash-multi-firewalls')" class="company-card cursor-pointer bg-white border border-gray-200 rounded-lg p-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="font-bold text-gray-900">Meridian Logistics Ltd</h3>
+              <p class="text-xs text-gray-400">Reino Unido · 2 firewalls</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded border sev-critical">1 crítico</span>
+          </div>
+          <div class="mt-3 flex gap-1 flex-wrap">
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Meridian-HQ-London</span>
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Meridian-Warehouse-Leeds</span>
+          </div>
+        </div>
+
+        <div class="company-card cursor-pointer bg-white border border-gray-200 rounded-lg p-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="font-bold text-gray-900">Sable &amp; Finch Legal Partners</h3>
+              <p class="text-xs text-gray-400">Estados Unidos · 1 firewall</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded border sev-low">Sem achados</span>
+          </div>
+          <div class="mt-3 flex gap-1 flex-wrap">
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">SableFinch-Office-NY</span>
+          </div>
+        </div>
+
+        <div class="company-card cursor-pointer bg-white border border-gray-200 rounded-lg p-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="font-bold text-gray-900">Aurora Health Clinics</h3>
+              <p class="text-xs text-gray-400">Austrália · 3 firewalls</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded border sev-high">2 altos</span>
+          </div>
+          <div class="mt-3 flex gap-1 flex-wrap">
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Aurora-Clinic-Sydney</span>
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Aurora-Clinic-Melbourne</span>
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Aurora-DataCenter</span>
+          </div>
+        </div>
+
+        <div class="company-card cursor-pointer bg-white border border-gray-200 rounded-lg p-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="font-bold text-gray-900">Kowalski Manufacturing Sp. z o.o.</h3>
+              <p class="text-xs text-gray-400">Polônia · 1 firewall</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded border sev-medium">1 médio</span>
+          </div>
+          <div class="mt-3 flex gap-1 flex-wrap">
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Kowalski-Plant-Warsaw</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ TELA 8: MULTIEMPRESA — FIREWALLS DE UMA EMPRESA SELECIONADA ============ -->
+<div id="screen-dash-multi-firewalls" class="screen">
+  <div class="flex min-h-screen">
+    <aside class="w-56 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+      <div class="p-4 text-white font-bold text-lg border-b border-gray-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        FireAudit
+      </div>
+      <div class="px-4 py-3 border-b border-gray-800">
+        <button onclick="showScreen('dash-multi-empresas')" class="text-xs text-gray-400 hover:text-white">← Todas as empresas</button>
+        <p class="text-sm font-semibold text-white mt-1">Meridian Logistics Ltd</p>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded bg-gray-800 text-white font-medium">Firewalls</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Achados (Findings)</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-800">Relatório com marca Chandran IT</a>
+        <a onclick="showScreen('alerts-config')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">Alertas desta empresa</a>
+      </nav>
+      <div class="p-3 border-t border-gray-800 text-xs text-gray-500">priya@chandranit.com</div>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="flex items-center gap-2 text-sm text-gray-400 mb-1">
+            <a onclick="showScreen('dash-multi-empresas')" class="hover:underline cursor-pointer">Empresas</a> / <span class="text-gray-700 font-medium">Meridian Logistics Ltd</span>
+          </div>
+          <h1 class="text-xl font-bold text-gray-900">Firewalls — Meridian Logistics Ltd</h1>
+        </div>
+        <button onclick="showScreen('onboarding')" class="bg-purple-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-purple-700">+ Adicionar firewall a esta empresa</button>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">Nome</th>
+              <th class="text-left px-4 py-3">Versão</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Achados</th>
+              <th class="text-left px-4 py-3">Último check-in</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="showScreen('detail')">
+              <td class="px-4 py-3 font-medium text-gray-900">Meridian-HQ-London</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.7.2</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-green-700"><span class="w-2 h-2 rounded-full bg-green-500"></span>Online</span></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded border sev-critical">1 crítico</span></td>
+              <td class="px-4 py-3 text-gray-500">há 6 min</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+            <tr class="hover:bg-gray-50 cursor-pointer">
+              <td class="px-4 py-3 font-medium text-gray-900">Meridian-Warehouse-Leeds</td>
+              <td class="px-4 py-3 text-gray-500">pfSense CE 2.7.1</td>
+              <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-green-700"><span class="w-2 h-2 rounded-full bg-green-500"></span>Online</span></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded border sev-low">Nenhum achado</span></td>
+              <td class="px-4 py-3 text-gray-500">há 9 min</td>
+              <td class="px-4 py-3 text-blue-600">Ver detalhes →</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ TELA 9: DETALHE DE UM FIREWALL ============ -->
+<div id="screen-detail" class="screen">
+  <div class="flex min-h-screen">
+    <aside class="w-56 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+      <div class="p-4 text-white font-bold text-lg border-b border-gray-800">FireAudit</div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a onclick="showScreen('dash-individual')" class="block px-3 py-2 rounded hover:bg-gray-800 cursor-pointer">← Voltar</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="mb-6">
+        <div class="flex items-center gap-2 text-sm text-gray-400">
+          <span class="text-gray-500">Blackwood Retail Group</span> / <span class="text-gray-700">Blackwood-Matriz</span>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <h1 class="text-xl font-bold text-gray-900">Blackwood-Matriz — pfSense CE 2.7.2</h1>
+          <span class="text-xs text-gray-500">IP interno: 192.168.10.254 · Última sync: há 4 min</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mb-4 border-b border-gray-200">
+        <button class="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Todos (6)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">Regras arriscadas (3)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">Certificados (1)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">CVE / versão (1)</button>
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800">Drift de config (1)</button>
+        <button onclick="showScreen('api-config')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 ml-auto">⚙ Configurações</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="bg-white border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-critical shrink-0">CRÍTICO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Porta de gerenciamento SSH exposta sem restrição de origem</h3>
+            <p class="text-sm text-gray-600 mt-1">Regra na interface LAN permite acesso à porta 22 (SSH) de <code class="bg-gray-100 px-1 rounded">10.0.10.0/24</code> sem restringir a IPs específicos de administração.</p>
+            <p class="text-xs text-gray-400 mt-2">Detectado em: 2026-07-08 · Regra: "PASS 10.0.10.0/24 → 192.168.10.254:22"</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <div class="bg-white border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-critical shrink-0">CRÍTICO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Protocolo PPTP habilitado (inseguro/descontinuado)</h3>
+            <p class="text-sm text-gray-600 mt-1">Regra libera PPTP (TCP 1723 + GRE 47) na interface LAN. PPTP tem vulnerabilidades conhecidas e não deve mais ser usado.</p>
+            <p class="text-xs text-gray-400 mt-2">Detectado em: 2026-07-08 · Recomendação: migrar para WireGuard ou OpenVPN</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <div class="bg-white border border-orange-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-high shrink-0">ALTO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Certificado expira em 12 dias</h3>
+            <p class="text-sm text-gray-600 mt-1">Certificado usado na interface WAN (GUI HTTPS) expira em 2026-07-20. Renove antes do vencimento para evitar interrupção de acesso administrativo.</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <div class="bg-white border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-medium shrink-0">MÉDIO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Regra "any → any" ativa na interface OPT1</h3>
+            <p class="text-sm text-gray-600 mt-1">Interface OPT1 (Wi-Fi Convidados) permite todo tráfego sem restrição de origem ou destino.</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <div class="bg-white border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-medium shrink-0">MÉDIO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">Configuração alterada desde a última coleta</h3>
+            <p class="text-sm text-gray-600 mt-1">2 regras novas adicionadas na interface LAN entre a coleta de ontem e a de hoje. <a class="text-blue-600 underline">Ver diff completo</a></p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+
+        <div class="bg-white border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <span class="text-xs font-bold px-2 py-1 rounded border sev-low shrink-0">BAIXO</span>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 text-sm">2 regras duplicadas encontradas (alias "CDN-Fornecedor")</h3>
+            <p class="text-sm text-gray-600 mt-1">Duas regras com o mesmo alias e finalidade — considere consolidar para reduzir complexidade.</p>
+          </div>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5 shrink-0">Marcar como resolvido</button>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button class="bg-gray-900 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-gray-800">Exportar relatório PDF</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ TELA 10: CONFIGURAÇÃO DE API / AGENTE ============ -->
+<div id="screen-api-config" class="screen">
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <button onclick="showScreen('detail')" class="text-sm text-blue-600 mb-4">← Voltar ao firewall</button>
+    <h1 class="text-xl font-bold text-gray-900 mb-1">Configurações — Blackwood-Matriz</h1>
+    <p class="text-sm text-gray-500 mb-6">Token de ingestão, agente e dados de conexão local.</p>
+
+    <div class="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+      <h3 class="font-semibold text-gray-900 text-sm mb-3">Identificação</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Nome do firewall</label>
+          <input type="text" value="Blackwood-Matriz" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">IP/host local do pfSense</label>
+          <input type="text" value="192.168.10.254:8443" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+      <h3 class="font-semibold text-gray-900 text-sm mb-1">Token de ingestão</h3>
+      <p class="text-xs text-gray-500 mb-3">Usado pelo agente para autenticar o envio de snapshots. Nunca é a API key do seu pfSense — essa fica só localmente.</p>
+      <div class="flex items-center gap-2">
+        <input type="text" readonly value="fa_ingest_8f2a91cd6e••••••••••••" class="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm font-mono bg-gray-50">
+        <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-2">Copiar</button>
+        <button class="text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded px-3 py-2">Revogar e gerar novo</button>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">Criado em 2026-03-14 · Último uso: há 4 minutos</p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+      <h3 class="font-semibold text-gray-900 text-sm mb-1">Auto-update do agente</h3>
+      <div class="flex items-center justify-between text-sm">
+        <div>
+          <p class="text-gray-700">Versão instalada: <span class="font-mono">v0.4.2</span> · Última verificação: há 12 min</p>
+          <p class="text-xs text-gray-400 mt-1">O agente verifica e aplica atualizações automaticamente antes de cada execução (Cron).</p>
+        </div>
+        <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700">Atualizado</span>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-lg p-5">
+      <h3 class="font-semibold text-gray-900 text-sm mb-3">Testar conexão agora</h3>
+      <p class="text-xs text-gray-500 mb-3">Executa uma coleta manual imediata, sem esperar o próximo ciclo de Cron — útil para confirmar que tudo está configurado corretamente.</p>
+      <button class="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-blue-700">Testar agora</button>
+      <div class="mt-3 bg-green-50 border border-green-200 rounded-md p-3 text-xs text-green-800">✓ Última coleta manual: sucesso — snapshot recebido em 2026-07-08 09:14 (312 regras, 4 aliases, 2 túneis VPN lidos)</div>
+    </div>
+
+    <div class="mt-6 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-red-700">Remover este firewall</p>
+        <p class="text-xs text-gray-500">Apaga o token e para de coletar dados novos. Histórico é mantido conforme a política de retenção.</p>
+      </div>
+      <button class="text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded px-3 py-1.5 font-medium">Remover</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 11: CONFIGURAÇÃO DE ALERTAS ============ -->
+<div id="screen-alerts-config" class="screen">
+  <div class="max-w-3xl mx-auto py-10 px-4">
+    <button onclick="showScreen('dash-individual')" class="text-sm text-blue-600 mb-4">← Voltar</button>
+    <h1 class="text-xl font-bold text-gray-900 mb-1">Canais de alerta</h1>
+    <p class="text-sm text-gray-500 mb-6">Para onde enviamos avisos de achados críticos e agente offline.</p>
+
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden mb-4">
+      <div class="flex items-center justify-between p-4 border-b border-gray-100">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">✉️</span>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Email</p>
+            <p class="text-xs text-gray-500">marcos@blackwoodretail.com</p>
+          </div>
+        </div>
+        <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700">Ativo · padrão</span>
+      </div>
+      <div class="flex items-center justify-between p-4 border-b border-gray-100">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">💬</span>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Webhook — Slack</p>
+            <p class="text-xs text-gray-500 font-mono">https://hooks.slack.com/services/T0.../B0.../•••</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700">Ativo</span>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-2 py-1">Testar</button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">🔔</span>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Webhook — Discord</p>
+            <p class="text-xs text-gray-500 font-mono">https://discord.com/api/webhooks/•••</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2 py-1 rounded bg-red-100 text-red-700">Falhou no último teste</span>
+          <button class="text-xs bg-gray-100 hover:bg-gray-200 rounded px-2 py-1">Testar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-red-50 border border-red-200 rounded-md p-3 text-xs text-red-800 mb-4">
+      Último teste do webhook Discord retornou <strong>HTTP 404</strong> — a URL pode ter expirado. Gere um novo webhook no Discord e cole abaixo.
+    </div>
+
+    <div class="bg-white border border-dashed border-gray-300 rounded-lg p-5">
+      <h3 class="font-semibold text-gray-900 text-sm mb-3">+ Adicionar novo canal</h3>
+      <div class="grid grid-cols-3 gap-3">
+        <select class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+          <option>Webhook genérico</option>
+          <option>Slack</option>
+          <option>Discord</option>
+          <option>Telegram</option>
+        </select>
+        <input type="text" placeholder="URL do webhook" class="col-span-2 border border-gray-300 rounded-md px-3 py-2 text-sm">
+      </div>
+      <button class="mt-3 bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-semibold hover:bg-blue-700">Salvar e testar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 12: BILLING — CONTA INDIVIDUAL ============ -->
+<div id="screen-billing-individual" class="screen">
+  <div class="max-w-4xl mx-auto py-10 px-4">
+    <button onclick="showScreen('dash-individual')" class="text-sm text-blue-600 mb-4">← Voltar</button>
+    <h1 class="text-xl font-bold text-gray-900 mb-1">Plano &amp; Cobrança</h1>
+    <p class="text-sm text-gray-500 mb-6">Conta Individual — Blackwood Retail Group. Você está no plano <strong>Pro</strong> — próxima cobrança em 2026-08-08.</p>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div class="border-2 border-gray-200 rounded-lg p-5">
+        <h3 class="font-bold text-gray-900">Free</h3>
+        <p class="text-2xl font-bold mt-2">$0<span class="text-sm text-gray-400 font-normal">/mês</span></p>
+        <p class="text-xs text-gray-500 mt-1">Firewalls ilimitados · só métricas básicas</p>
+        <ul class="text-sm text-gray-600 mt-4 space-y-1">
+          <li>✓ CPU, RAM, uptime, interfaces</li>
+          <li>✓ Alerta de agente offline</li>
+          <li>✗ Regras, VPN e achados de segurança</li>
+        </ul>
+      </div>
+      <div class="border-2 border-blue-600 rounded-lg p-5 relative">
+        <span class="absolute -top-3 left-4 bg-blue-600 text-white text-xs px-2 py-0.5 rounded">Seu plano atual</span>
+        <h3 class="font-bold text-gray-900">Pro</h3>
+        <p class="text-2xl font-bold mt-2">$19<span class="text-sm text-gray-400 font-normal">/mês</span></p>
+        <p class="text-xs text-gray-500 mt-1">Firewalls ilimitados · profundidade completa</p>
+        <ul class="text-sm text-gray-600 mt-4 space-y-1">
+          <li>✓ Regras, VPN e os 5 achados</li>
+          <li>✓ Relatório PDF · histórico 90 dias</li>
+          <li>✓ Alertas email + webhook</li>
+        </ul>
+      </div>
+      <div class="border-2 border-gray-200 rounded-lg p-5">
+        <h3 class="font-bold text-gray-900">Premium</h3>
+        <p class="text-2xl font-bold mt-2">$39<span class="text-sm text-gray-400 font-normal">/mês</span></p>
+        <p class="text-xs text-gray-500 mt-1">Tudo do Pro + edição remota</p>
+        <ul class="text-sm text-gray-600 mt-4 space-y-1">
+          <li>✓ Editar/criar regras com preview</li>
+          <li>✓ Log de auditoria + rollback</li>
+        </ul>
+        <button class="w-full mt-4 bg-gray-900 text-white rounded-md py-1.5 text-sm font-semibold hover:bg-gray-800">Fazer upgrade</button>
+      </div>
+    </div>
+
+    <p class="text-xs text-gray-400 mt-4">Valores ilustrativos — sujeitos a definição final antes do lançamento.</p>
+
+    <div class="mt-6 bg-white border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-700">Atende mais de uma empresa?</p>
+        <p class="text-xs text-gray-500">Migre para Conta Multiempresa — sua 1ª empresa mantém o mesmo valor do plano Pro.</p>
+      </div>
+      <button onclick="showScreen('blocked')" class="text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 rounded px-3 py-1.5 font-medium">Saiba mais</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 13: BILLING — CONTA MULTIEMPRESA ============ -->
+<div id="screen-billing-multi" class="screen">
+  <div class="max-w-4xl mx-auto py-10 px-4">
+    <button onclick="showScreen('dash-multi-empresas')" class="text-sm text-blue-600 mb-4">← Voltar</button>
+    <h1 class="text-xl font-bold text-gray-900 mb-1">Plano &amp; Cobrança</h1>
+    <p class="text-sm text-gray-500 mb-6">Conta Multiempresa — Chandran IT Consulting. Próxima cobrança em 2026-08-08.</p>
+
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+          <tr>
+            <th class="text-left px-4 py-3">Empresa</th>
+            <th class="text-left px-4 py-3">Firewalls</th>
+            <th class="text-left px-4 py-3">Faixa</th>
+            <th class="text-right px-4 py-3">Valor/mês</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr>
+            <td class="px-4 py-3 font-medium text-gray-900">Meridian Logistics Ltd</td>
+            <td class="px-4 py-3 text-gray-500">2</td>
+            <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700">1ª empresa (incluída)</span></td>
+            <td class="px-4 py-3 text-right font-medium">$19,00</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-medium text-gray-900">Sable &amp; Finch Legal Partners</td>
+            <td class="px-4 py-3 text-gray-500">1</td>
+            <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">Adicional 2ª–5ª</span></td>
+            <td class="px-4 py-3 text-right font-medium">$15,00</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-medium text-gray-900">Aurora Health Clinics</td>
+            <td class="px-4 py-3 text-gray-500">3</td>
+            <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">Adicional 2ª–5ª</span></td>
+            <td class="px-4 py-3 text-right font-medium">$15,00</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-medium text-gray-900">Kowalski Manufacturing Sp. z o.o.</td>
+            <td class="px-4 py-3 text-gray-500">1</td>
+            <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">Adicional 2ª–5ª</span></td>
+            <td class="px-4 py-3 text-right font-medium">$15,00</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="bg-gray-50 font-semibold">
+            <td class="px-4 py-3" colspan="3">Total mensal (4 empresas)</td>
+            <td class="px-4 py-3 text-right">$64,00</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-lg p-5">
+      <h3 class="font-semibold text-gray-900 text-sm mb-3">Faixas de desconto por volume (empresas adicionais)</h3>
+      <div class="grid grid-cols-3 gap-3 text-sm">
+        <div class="border border-gray-100 rounded-md p-3">
+          <p class="text-xs text-gray-500">2ª – 5ª empresa</p>
+          <p class="font-bold text-gray-900">$15,00<span class="text-xs text-gray-400 font-normal">/empresa</span></p>
+        </div>
+        <div class="border border-gray-100 rounded-md p-3">
+          <p class="text-xs text-gray-500">6ª – 15ª empresa</p>
+          <p class="font-bold text-gray-900">$12,00<span class="text-xs text-gray-400 font-normal">/empresa</span></p>
+        </div>
+        <div class="border border-gray-100 rounded-md p-3">
+          <p class="text-xs text-gray-500">16ª empresa +</p>
+          <p class="font-bold text-gray-900">$10,00<span class="text-xs text-gray-400 font-normal">/empresa</span></p>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">Valores ilustrativos — sujeitos a definição final antes do lançamento. Todas as empresas operam sempre em profundidade total (não existe tier Free na Conta Multiempresa).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA 14: BLOQUEIO — CONTA INDIVIDUAL TENTANDO 2ª EMPRESA ============ -->
+<div id="screen-blocked" class="screen">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900 p-6">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-8 text-center">
+      <div class="w-14 h-14 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M4.93 19h14.14c1.1 0 1.79-1.19 1.24-2.15L13.24 4.85a1.5 1.5 0 00-2.48 0L3.7 16.85C3.15 17.81 3.84 19 4.93 19z"/></svg>
+      </div>
+      <h1 class="text-lg font-bold text-gray-900">Sua Conta Individual já está vinculada a uma empresa</h1>
+      <p class="text-sm text-gray-500 mt-2">A Conta Individual (Blackwood Retail Group) foi desenhada para 1 empresa só — isso mantém o plano simples e sem excesso de camadas para quem administra o firewall de um único lugar.</p>
+      <p class="text-sm text-gray-500 mt-3">Para gerenciar o firewall de <strong>outra empresa</strong> com o mesmo login, você precisa migrar para uma <strong>Conta Multiempresa</strong>.</p>
+
+      <div class="bg-purple-50 border border-purple-100 rounded-lg p-4 mt-5 text-left">
+        <p class="text-sm font-medium text-purple-900">O que muda ao migrar:</p>
+        <ul class="text-xs text-purple-800 mt-2 space-y-1">
+          <li>• Blackwood Retail Group continua exatamente como está, sem perder histórico.</li>
+          <li>• Você paga o mesmo valor do Pro atual pela 1ª empresa — sem penalidade por migrar.</li>
+          <li>• Empresas adicionais entram com desconto por volume (ver tabela de billing).</li>
+        </ul>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="showScreen('dash-individual')" class="flex-1 bg-gray-100 text-gray-700 rounded-md py-2 text-sm font-medium hover:bg-gray-200">Continuar só com 1 empresa</button>
+        <button onclick="showScreen('billing-multi')" class="flex-1 bg-purple-600 text-white rounded-md py-2 text-sm font-semibold hover:bg-purple-700">Migrar para Multiempresa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+<

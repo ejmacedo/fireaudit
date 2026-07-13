@@ -1,0 +1,34 @@
+# Segredos — nunca commitar (docs/specs/fase5-seguranca.md secao 9)
+.env
+.env.*
+!.env.example
+
+# Claude Code — notas/permissões pessoais, não versionar
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# Docker
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
