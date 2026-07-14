@@ -12,3 +12,19 @@ class EmailAlreadyRegisteredError(DomainError):
 
 class InvalidAccountTypeError(DomainError):
     """The account_type is not one of the allowed values."""
+
+
+class InvalidCredentialsError(DomainError):
+    """Email or password does not match a valid user."""
+
+
+class InvalidRefreshTokenError(DomainError):
+    """Refresh token is not recognized."""
+
+
+class RefreshTokenExpiredError(DomainError):
+    """Refresh token exists but has passed its expiration."""
+
+
+class RefreshTokenRevokedError(DomainError):
+    """Refresh token exists but has been revoked (e.g. rotated or logged out)."""
