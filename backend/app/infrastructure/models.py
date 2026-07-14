@@ -170,8 +170,8 @@ class AlertRule(Base):
         UUID(as_uuid=True), ForeignKey("alert_channels.id", ondelete="CASCADE"), nullable=False
     )
     active: Mapped[bool] = mapped_column(nullable=False, server_default="true")
-    created_by_user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())

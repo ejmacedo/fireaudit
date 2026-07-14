@@ -284,7 +284,7 @@ def upgrade() -> None:
             "created_by_user_id",
             postgresql.UUID(as_uuid=True),
             sa.ForeignKey("users.id", ondelete="SET NULL"),
-            nullable=False,
+            nullable=True,
         ),
         sa.Column(
             "created_at",
