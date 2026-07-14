@@ -28,3 +28,23 @@ class RegisterResponse(BaseModel):
     account_id: uuid.UUID
     user_id: uuid.UUID
     organization_id: uuid.UUID | None
+
+
+class LoginPayload(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
+class RefreshPayload(BaseModel):
+    refresh_token: str = Field(min_length=1)
+
+
+class LogoutPayload(BaseModel):
+    refresh_token: str = Field(min_length=1)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: Literal["bearer"] = "bearer"
+    expires_in: int

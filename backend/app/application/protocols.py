@@ -1,7 +1,8 @@
 import uuid
+from dataclasses import dataclass
 from typing import Protocol
 
-from app.domain.entities import Account, Organization, User
+from app.domain.entities import Account, Organization, RefreshToken, User
 
 
 class AccountRepository(Protocol):
@@ -12,15 +13,40 @@ class AccountRepository(Protocol):
 class OrganizationRepository(Protocol):
     async def create(self, organization: Organization) -> Organization: ...
     async def count_active_for_account(self, account_id: uuid.UUID) -> int: ...
+    async def list_active_for_account(self, account_id: uuid.UUID) -> list[Organization]: ...
 
 
 class UserRepository(Protocol):
     async def create(self, user: User) -> User: ...
     async def get_by_email(self, email: str) -> User | None: ...
+    async def get_by_id(self, user_id: uuid.UUID) -> User | None: ...
+
+
+class RefreshTokenRepository(Protocol):
+    async def create(self, token: RefreshToken) -> RefreshToken: ...
+    async def get_by_token_hash(self, token_hash: str) -> RefreshToken | None: ...
+    async def revoke(self, token_id: uuid.UUID) -> None: ...
 
 
 class PasswordHasher(Protocol):
     def hash(self, plain: str) -> str: ...
+
+
+class PasswordVerifier(Protocol):
+    def verify(self, plain: str, hashed: str) -> bool: ...
+
+
+@dataclass(frozen=True)
+class AccessTokenClaims:
+    user_id: uuid.UUID
+    account_id: uuid.UUID
+
+
+class TokenService(Protocol):
+    def create_access_token(self, user_id: uuid.UUID, account_id: uuid.UUID) -> str: ...
+    def decode_access_token(self, token: str) -> AccessTokenClaims: ...
+    def generate_refresh_token(self) -> str: ...
+    def hash_refresh_token(self, plain: str) -> str: ...
 
 
 class UnitOfWork(Protocol):

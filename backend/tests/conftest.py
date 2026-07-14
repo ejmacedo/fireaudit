@@ -35,6 +35,18 @@ async def db_session(postgres_url: str) -> AsyncGenerator[AsyncSession, None]:
     await engine.dispose()
 
 
+@pytest.fixture(autouse=True)
+def _reset_login_rate_limiter() -> None:
+    """The auth router keeps an in-memory bucket keyed by IP+email. Clear it
+    between tests so unrelated cases don't inherit each other's counters."""
+    try:
+        from app.api.routers import auth as auth_router
+
+        auth_router._login_attempts.clear()
+    except Exception:
+        pass
+
+
 @pytest.fixture
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
