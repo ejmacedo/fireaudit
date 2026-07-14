@@ -21,7 +21,9 @@ class Account(Base):
         CheckConstraint("account_type IN ('individual', 'multiempresa')", name="chk_account_type"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     account_type: Mapped[str] = mapped_column(Text, nullable=False, server_default="individual")
     tax_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
@@ -32,7 +34,9 @@ class Account(Base):
 class Organization(Base):
     __tablename__ = "organizations"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
@@ -45,7 +49,9 @@ class Organization(Base):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
     )
@@ -60,7 +66,9 @@ class User(Base):
 class Firewall(Base):
     __tablename__ = "firewalls"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
     )
@@ -76,7 +84,9 @@ class Firewall(Base):
 class AgentToken(Base):
     __tablename__ = "agent_tokens"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     firewall_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("firewalls.id", ondelete="CASCADE"), nullable=False
     )
@@ -89,7 +99,9 @@ class AgentToken(Base):
 class Snapshot(Base):
     __tablename__ = "snapshots"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     firewall_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("firewalls.id", ondelete="CASCADE"), nullable=False
     )
@@ -102,7 +114,9 @@ class Snapshot(Base):
 class Finding(Base):
     __tablename__ = "findings"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     snapshot_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("snapshots.id", ondelete="CASCADE"), nullable=False
     )
@@ -120,7 +134,9 @@ class Finding(Base):
 class AlertChannel(Base):
     __tablename__ = "alert_channels"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
     )
@@ -132,10 +148,14 @@ class AlertChannel(Base):
 class AlertRule(Base):
     __tablename__ = "alert_rules"
     __table_args__ = (
-        CheckConstraint("operator IN ('gt', 'gte', 'lt', 'lte', 'eq')", name="chk_alert_rule_operator"),
+        CheckConstraint(
+            "operator IN ('gt', 'gte', 'lt', 'lte', 'eq')", name="chk_alert_rule_operator"
+        ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
     )
@@ -167,7 +187,9 @@ class AlertDelivery(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     finding_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("findings.id", ondelete="CASCADE"), nullable=True
     )
@@ -185,12 +207,19 @@ class AlertDelivery(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
     __table_args__ = (
-        CheckConstraint("status IN ('active', 'past_due', 'canceled')", name="chk_subscription_status"),
+        CheckConstraint(
+            "status IN ('active', 'past_due', 'canceled')", name="chk_subscription_status"
+        ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     account_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, unique=True
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
     tier: Mapped[str] = mapped_column(Text, nullable=False, server_default="free")
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -202,7 +231,9 @@ class Subscription(Base):
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
     )
@@ -228,11 +259,15 @@ class FirewallCommand(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     firewall_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("firewalls.id", ondelete="CASCADE"), nullable=False
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
     command_type: Mapped[str] = mapped_column(Text, nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     preview: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -246,14 +281,18 @@ class FirewallCommand(Base):
 class RemoteChangeLog(Base):
     __tablename__ = "remote_change_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
     firewall_command_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("firewall_commands.id"), nullable=False, unique=True
     )
     firewall_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("firewalls.id", ondelete="CASCADE"), nullable=False
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
     before_state: Mapped[dict] = mapped_column(JSONB, nullable=False)
     after_state: Mapped[dict] = mapped_column(JSONB, nullable=False)
     applied_at: Mapped[datetime] = mapped_column(nullable=False)

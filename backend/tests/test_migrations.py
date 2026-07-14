@@ -1,11 +1,12 @@
 """Phase 1: alembic upgrade head creates the full schema with all constraints/indexes."""
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import create_async_engine
 from testcontainers.postgres import PostgresContainer
+
+from alembic import command
 
 EXPECTED_TABLES = {
     "accounts",
