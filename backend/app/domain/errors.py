@@ -28,3 +28,11 @@ class RefreshTokenExpiredError(DomainError):
 
 class RefreshTokenRevokedError(DomainError):
     """Refresh token exists but has been revoked (e.g. rotated or logged out)."""
+
+
+class FirewallNotFoundError(DomainError):
+    """Firewall not found or does not belong to the authenticated organization."""
+
+
+class FirewallNameEmptyError(DomainError):
+    """Firewall name cannot be empty."""
