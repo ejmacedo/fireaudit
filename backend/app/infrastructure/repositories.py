@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.entities import Account, Organization, RefreshToken, User
+from app.domain.entities import Account, AgentToken, Firewall, Organization, RefreshToken, User
 from app.infrastructure import models
 
 
@@ -166,6 +166,115 @@ class SqlAlchemyRefreshTokenRepository:
             update(models.RefreshToken)
             .where(models.RefreshToken.id == token_id)
             .values(revoked_at=datetime.now(UTC))
+        )
+        await self._session.execute(stmt)
+
+
+def _firewall_from_orm(row: models.Firewall) -> Firewall:
+    return Firewall(
+        id=row.id,
+        organization_id=row.organization_id,
+        name=row.name,
+        pfsense_version=row.pfsense_version,
+        status=row.status,
+        last_seen_at=row.last_seen_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+        deleted_at=row.deleted_at,
+    )
+
+
+def _agent_token_from_orm(row: models.AgentToken) -> AgentToken:
+    return AgentToken(
+        id=row.id,
+        firewall_id=row.firewall_id,
+        token_hash=row.token_hash,
+        status=row.status,
+        created_at=row.created_at,
+        revoked_at=row.revoked_at,
+    )
+
+
+class SqlAlchemyFirewallRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, firewall: Firewall) -> Firewall:
+        row = models.Firewall(
+            id=firewall.id,
+            organization_id=firewall.organization_id,
+            name=firewall.name,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _firewall_from_orm(row)
+
+    async def get_by_id(self, firewall_id: uuid.UUID) -> Firewall | None:
+        row = await self._session.get(models.Firewall, firewall_id)
+        return _firewall_from_orm(row) if row else None
+
+    async def list_active_for_org(
+        self, organization_id: uuid.UUID, cursor: uuid.UUID | None, limit: int
+    ) -> list[Firewall]:
+        stmt = select(models.Firewall).where(
+            models.Firewall.organization_id == organization_id,
+            models.Firewall.deleted_at.is_(None),
+        )
+        if cursor is not None:
+            stmt = stmt.where(models.Firewall.id > cursor)
+        stmt = stmt.order_by(models.Firewall.id).limit(limit)
+        result = await self._session.execute(stmt)
+        return [_firewall_from_orm(row) for row in result.scalars().all()]
+
+    async def update(self, firewall: Firewall) -> Firewall:
+        row = await self._session.get(models.Firewall, firewall.id)
+        if row is None:
+            raise ValueError(f"Firewall {firewall.id} not found")
+        row.name = firewall.name
+        row.pfsense_version = firewall.pfsense_version
+        row.status = firewall.status
+        row.last_seen_at = firewall.last_seen_at
+        row.deleted_at = firewall.deleted_at
+        row.updated_at = datetime.now(UTC)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _firewall_from_orm(row)
+
+
+class SqlAlchemyAgentTokenRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, token: AgentToken) -> AgentToken:
+        row = models.AgentToken(
+            id=token.id,
+            firewall_id=token.firewall_id,
+            token_hash=token.token_hash,
+            status=token.status,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _agent_token_from_orm(row)
+
+    async def get_active_for_firewall(self, firewall_id: uuid.UUID) -> AgentToken | None:
+        stmt = select(models.AgentToken).where(
+            models.AgentToken.firewall_id == firewall_id,
+            models.AgentToken.status == "active",
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _agent_token_from_orm(row) if row else None
+
+    async def revoke_all_for_firewall(self, firewall_id: uuid.UUID) -> None:
+        stmt = (
+            update(models.AgentToken)
+            .where(
+                models.AgentToken.firewall_id == firewall_id,
+                models.AgentToken.status == "active",
+            )
+            .values(status="revoked", revoked_at=datetime.now(UTC))
         )
         await self._session.execute(stmt)
 
