@@ -124,4 +124,67 @@ O RBAC multiusuário da v3 (múltiplas pessoas dentro da mesma empresa, com pap�
 
 ## 9. Requisitos funcionais (resumo — detalhamento por tela na Fase 6/7; todos fazem parte do v1)
 
-- RF01: Cadastro/login d
+- RF01: Cadastro/login de usuário e organização.
+- RF02: Fluxo de onboarding com geração de script de agente personalizado por firewall.
+- RF03: Ingestão de dados via endpoint de API autenticado por token.
+- RF04: Motor de análise que gera "achados" a partir de cada snapshot recebido (6 tipos, seção 6.3).
+- RF05: Dashboard com listagem de firewalls e status agregado, com filtros combináveis (seção 6.4).
+- RF06: Tela de detalhe por firewall com achados categorizados por severidade.
+- RF07: Sistema de billing com os 3 tiers e upgrade/downgrade self-service.
+- RF08: Sistema de alertas configurável (email, webhook), incluindo criador de regras de alerta customizadas por limiar de métrica (seção 6.2).
+- RF09: Exportação de relatório em PDF (Pro+).
+- RF10: Interface de edição remota de regras com preview, confirmação em duas etapas e rollback (tier Premium — faz parte do v1, não é mais fase futura).
+- RF11: Auto-update do agente antes de cada execução.
+- RF12: (Novo, 2026-07-08) Agente passa a fazer polling de comandos remotos pendentes (não só push de snapshot), para viabilizar RF10 — ver `fase3-arquitetura.md` e `fase8-design-api.md`.
+
+## 10. Requisitos não-funcionais
+
+- RNF01 — Segurança: API keys de clientes criptografadas em repouso (AES-256, chave gerenciada via KMS); toda comunicação agente↔backend via TLS 1.2+; ver Fase 5 para detalhamento completo.
+- RNF02 — Disponibilidade: backend com meta inicial de 99.5% (razoável para MVP com orçamento restrito; revisar para 99.9% quando a base crescer).
+- RNF03 — Internacionalização: timestamps em UTC internamente, exibidos no timezone do navegador do usuário; strings de interface preparadas para i18n desde o início mesmo com um único idioma (inglês) no lançamento.
+- RNF04 — Performance: tempo de resposta do dashboard < 2s para contas com até 20 firewalls (P95).
+- RNF05 — Auditabilidade: toda ação de escrita remota (tier Premium, já no v1) gera log imutável.
+- RNF06 — Portabilidade do agente: compatível com as 3 últimas versões estáveis do pfSense CE.
+- RNF07 — Custo operacional: infraestrutura do MVP deve operar dentro de ~USD 20/mês (orçamento do fundador, ~R$100), o que direciona fortemente as escolhas de hospedagem na Fase 10.
+
+## 11. Restrições
+
+- Orçamento de infraestrutura inicial limitado (~USD 20/mês).
+- Equipe de 1 pessoa, 10-20h/semana, fora do horário comercial (7h-18h ocupado).
+- Sem orçamento de marketing pago — aquisição depende de conteúdo/comunidade.
+- Suporte ao cliente é assíncrono/best-effort no início (sem SLA formal, chamadas de vídeo pontuais fora do expediente).
+
+## 12. Roadmap do produto (reescrito em 2026-07-08 — mudança de escopo mais importante do documento)
+
+**Decisão do fundador (2026-07-08):** o faseamento antigo (v1 read-only limitado → v5 edição remota, ao longo de anos) foi substituído por um único lançamento completo. O "v1" abaixo é o produto completo, não um recorte read-only. Justificativa e riscos assumidos: edição remota é o componente de maior risco de segurança do produto (ver `fase5-seguranca.md`), e ao entrar desde o lançamento, exige que a Fase 5 (segurança) e Fase 11 (testes) tratem esse componente com o mesmo rigor que teriam se ele fosse lançado "com calma" depois de anos de maturação do resto do produto — isso é um risco de cronograma e de qualidade que o fundador optou por assumir conscientemente, e não algo que deva ser suavizado ou reintroduzido como faseamento posterior sem confirmação explícita dele.
+
+- **v0 — Validação (atual):** wireframes prontos, validação de dor em comunidades ainda pendente.
+- **v1 — Lançamento completo:** cadastro (Individual + Multiempresa, seção 6.1, com experiência completa de seletor de empresa desde o início — não mais adiada para "v2"), onboarding, agente com auto-update e polling de comandos remotos (RF12), 6 tipos de achado (seção 6.3, incluindo `duplicate_rule`), dashboard com filtros (seção 6.4), billing Free/Pro/Premium via Stripe, alertas email+webhook **e criador de alertas customizados** (seção 6.2), relatório PDF, **edição remota de regras com preview/confirmação/rollback** (tier Premium, antigo RF10/v5). Multi-firewall por organização já no v1 (não é mais uma evolução de v2).
+- **v2 — RBAC multiusuário:** múltiplos usuários dentro da **mesma** organização, papéis/permissões (antigo "v3"). **Distinto da Conta Multiempresa** (que já existe desde v1 e é sobre 1 usuário administrando várias organizações) — isto é sobre várias pessoas administrando a mesma organização. Permanece fora do v1 porque é uma dimensão de complexidade independente (multiusuário dentro da mesma empresa), não uma funcionalidade de auditoria/controle do firewall em si.
+- **v3 — Suporte a OPNsense** (antigo "v4"). Permanece fora do v1 porque é uma dimensão de escopo diferente (outra plataforma de firewall inteira, com API/formato de regra próprios), não uma funcionalidade adicional sobre pfSense.
+
+## 13. Definição do v1 — produto completo (reescrito em 2026-07-08)
+
+Escopo do v1 (lançamento): conta Individual (1 organização) ou Multiempresa (N organizações, seção 6.1) com múltiplos usuários por conta (mas 1 organização visível por vez por conta Individual — RBAC multiusuário dentro da mesma organização é v2, ver seção 12) e N firewalls por organização (sem limite artificial — gatilho de upgrade é profundidade de acesso, não quantidade). Tiers Free/Pro/Premium operacionais com cobrança via Stripe desde o lançamento, incluindo o fluxo completo de edição remota do Premium (preview, confirmação em duas etapas, log de auditoria, rollback). Agente open-source com auto-update e polling de comandos remotos. 6 tipos de achado automático (seção 6.3). Criador de alertas customizados por limiar de métrica (seção 6.2), alertas email + webhook genérico. Filtros de dashboard (seção 6.4). Relatório PDF no Pro+.
+
+**O que continua fora, mesmo do v1 completo (ver seção 12):** RBAC multiusuário dentro da mesma organização (v2) e suporte a OPNsense (v3). Estes dois continuam fora porque resolvem problemas estruturalmente diferentes do que foi ampliado nesta rodada (colaboração multiusuário e suporte a outra plataforma, respectivamente) — não são "mais uma funcionalidade de auditoria/controle", são dimensões novas de produto.
+
+## 14. Backlog priorizado (top do backlog, não exaustivo — atualizado em 2026-07-08)
+
+1. Definir schema de banco com `organizations`/`accounts` desde o início (Fase 4).
+2. Especificar contrato do endpoint de ingestão e do payload do agente (Fase 8).
+3. Especificar mecanismo de auto-update do agente (script verifica versão, baixa nova versão de URL fixa, compara hash antes de substituir).
+4. Especificar as 6 checagens do motor de análise em detalhe (regras de detecção, incluindo `duplicate_rule`).
+5. Especificar fluxo de billing/upgrade Free→Pro→Premium (Stripe Checkout + webhook de confirmação).
+6. Especificar processo de curadoria/atualização da base de CVE (ver risco 2.3 da Fase 1).
+7. Onboarding: guia + vídeo + geração de script personalizado.
+8. Dashboard e tela de detalhe, incluindo filtros (seção 6.4) — especificação de estados: loading, vazio, erro.
+9. Especificação de segurança do tier Premium — **agora prioridade do v1, não mais adiada** (ver `fase5-seguranca.md`, seção dedicada a escrita remota).
+10. (Novo) Especificar schema e API do criador de alertas customizados (seção 6.2).
+11. (Novo) Especificar protocolo de polling de comandos remotos entre agente e backend (RF12).
+
+---
+
+## Observação sobre o novo prompt-mestre recebido
+
+O prompt que você trouxe pede um nível de profundidade equivalente ao de uma equipe de engenharia completa (arquitetura, banco, segurança, UX, API, performance, infra, qualidade) antes de qualquer código. Vou seguir essa estrutura fase por fase, como as tasks já organizadas mostram. Uma nota de calibração honesta: para um produto no estágio de "validação de mercado ainda pendente, fundador solo, 10-20h/semana", uma parte desse rigor (ex: CQRS, event-driven, microsserviços) provavelmente será **avaliada e descartada por overengineering** nas fases seguintes — vou justificar cada decisão de arquitetura com esse contexto em mente, não aplicar padrões de Big Tech por padrão só porque o prompt os menciona. Isso é consistente com a própria filosofia que o prompt pede ("evite overengineering quando ele não gerar benefícios reais").

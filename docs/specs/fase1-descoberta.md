@@ -59,4 +59,14 @@ Já foi decidido que o público é internacional (USD, conteúdo em inglês). Is
 ## 4. Riscos técnicos a monitorar (não bloqueiam o MVP, mas devem estar no radar)
 
 - Mudança de formato de endpoints entre versões do pacote RESTAPI do pfSense (já observado na sua própria experiência) — precisa de uma camada de "adapter" versionada, não parsing rígido.
-- Rate limiting / 
+- Rate limiting / carga no backend se muitos agentes fizerem check-in no mesmo intervalo de Cron (ex: todos configurados para rodar exatamente no minuto 0) — mitigável com jitter no agente (pequeno atraso aleatório).
+- Confiabilidade da lista de CVE (ver 2.3) — risco de reputação, não só técnico.
+
+## 5. Riscos de negócio a monitorar
+
+- Ciclo de confiança em produto de segurança vendido self-service para um público altamente tecnicamente cético (comunidade pfSense/homelab tende a desconfiar de SaaS fechado, prefere open-source). Isso sugere considerar, como estratégia futura (não MVP), abrir o código do **agente** (não do backend) como open-source — aumenta confiança sem comprometer o modelo de negócio, que está no backend/dashboard, não no agente.
+- Dependência de plataforma única (pfSense) — ver 2.8.
+
+## 6. Decisões que preciso que você tome antes de eu avançar para a Fase 2
+
+Essas não são perguntas retóricas — elas mudam o desenho do PRD e da arquitetura de forma material.

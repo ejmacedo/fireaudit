@@ -1,4 +1,7 @@
+import hashlib
+
 from fastapi import APIRouter, Depends, Request, status
+from slowapi import Limiter
 
 from app.api.deps import get_ingest_snapshot
 from app.api.deps_auth import AgentContext, get_current_agent
@@ -8,6 +11,15 @@ from app.application.use_cases.ingest_snapshot import IngestSnapshot, IngestSnap
 from app.infrastructure.security import HMACVerifier
 
 router = APIRouter(tags=["ingest"])
+limiter = Limiter(key_func=lambda request: request.client.host if request.client else "unknown")
+
+
+def _agent_token_rate_limit_key(request: Request) -> str:
+    authorization = request.headers.get("authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        return "missing-agent-token"
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 @router.post(
@@ -15,6 +27,7 @@ router = APIRouter(tags=["ingest"])
     status_code=status.HTTP_202_ACCEPTED,
     response_model=IngestSnapshotResponse,
 )
+@limiter.limit("1/minute", key_func=_agent_token_rate_limit_key)
 async def ingest_snapshot(
     request: Request,
     payload: SnapshotPayload,

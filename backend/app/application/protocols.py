@@ -64,6 +64,9 @@ class FirewallRepository(Protocol):
         self, organization_id: uuid.UUID, cursor: uuid.UUID | None, limit: int
     ) -> list[Firewall]: ...
     async def update(self, firewall: Firewall) -> Firewall: ...
+    async def record_check_in(
+        self, firewall_id: uuid.UUID, pfsense_version: str | None
+    ) -> None: ...
 
 
 class AgentTokenRepository(Protocol):

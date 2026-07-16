@@ -1,7 +1,7 @@
 import uuid
 from dataclasses import dataclass
 
-from app.application.protocols import SnapshotRepository, UnitOfWork
+from app.application.protocols import FirewallRepository, SnapshotRepository, UnitOfWork
 from app.domain.entities import Snapshot
 
 
@@ -17,8 +17,14 @@ class IngestSnapshotResult:
 
 
 class IngestSnapshot:
-    def __init__(self, snapshots: SnapshotRepository, uow: UnitOfWork) -> None:
+    def __init__(
+        self,
+        snapshots: SnapshotRepository,
+        firewalls: FirewallRepository,
+        uow: UnitOfWork,
+    ) -> None:
         self._snapshots = snapshots
+        self._firewalls = firewalls
         self._uow = uow
 
     async def execute(self, request: IngestSnapshotRequest) -> IngestSnapshotResult:
@@ -27,5 +33,9 @@ class IngestSnapshot:
             raw_payload=request.raw_payload,
         )
         snapshot = await self._snapshots.create(snapshot)
+        await self._firewalls.record_check_in(
+            firewall_id=request.firewall_id,
+            pfsense_version=request.raw_payload.get("pfsense_version"),
+        )
         await self._uow.commit()
         return IngestSnapshotResult(snapshot_id=snapshot.id)

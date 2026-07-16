@@ -249,6 +249,18 @@ class SqlAlchemyFirewallRepository:
         await self._session.refresh(row)
         return _firewall_from_orm(row)
 
+    async def record_check_in(self, firewall_id: uuid.UUID, pfsense_version: str | None) -> None:
+        now = datetime.now(UTC)
+        values: dict[str, object] = {
+            "status": "active",
+            "last_seen_at": now,
+            "updated_at": now,
+        }
+        if pfsense_version is not None:
+            values["pfsense_version"] = pfsense_version
+        stmt = update(models.Firewall).where(models.Firewall.id == firewall_id).values(**values)
+        await self._session.execute(stmt)
+
 
 class SqlAlchemyAgentTokenRepository:
     def __init__(self, session: AsyncSession) -> None:

@@ -50,4 +50,34 @@ Componentes de risco mais baixo (UI de configurações simples, textos estático
 - **(Novo, 2026-07-08) `agent_token` não pode criar nem confirmar `firewall_command`** — só JWT de usuário autenticado com tier Premium e 2FA habilitado pode; tentar criar/confirmar com `agent_token` deve ser rejeitado com `401`/`403`, nunca aceito silenciosamente.
 - **(Novo, 2026-07-08) Confirmação de comando sem código 2FA válido é sempre rejeitada** — mesmo com JWT de sessão válido e o comando existente em `pending_confirmation`, `POST .../confirm` sem `totp_code` correto retorna erro e o `status` do comando permanece inalterado.
 - **(Novo, 2026-07-08) Comando expirado nunca é entregue ao agente** — um `firewall_command` com `expires_at` no passado não aparece em `GET /v1/firewalls/{id}/commands/pending`, mesmo que seu `status` ainda não tenha sido atualizado para `expired` pelo job de limpeza (a checagem de expiração é feita na query de leitura, não só no job periódico — defesa em profundidade contra atraso do job).
-- **(Novo, 2026-07-08) Um comando não pode ser aplicado duas vezes** — simular dois `POST .../result` para o mesmo `command
+- **(Novo, 2026-07-08) Um comando não pode ser aplicado duas vezes** — simular dois `POST .../result` para o mesmo `command_id` (ex: retry de rede do agente): o segundo deve ser rejeitado ou ser um no-op idempotente, nunca gerar um segundo registro em `remote_change_logs` para o mesmo comando (reforçado pela constraint `UNIQUE` em `firewall_command_id`, Fase 4).
+- **(Novo, 2026-07-08) Adulterar um registro histórico de `remote_change_logs` quebra a verificação da cadeia de hash** a partir daquele ponto — teste explícito de que o `record_hash` de um registro depende do conteúdo do anterior, e que a função de verificação da cadeia detecta a quebra.
+- **(Novo, 2026-07-08) Usuário sem 2FA habilitado não consegue nem criar nem confirmar um `firewall_command`**, mesmo sendo tier Premium — `403 TWO_FACTOR_REQUIRED` (Fase 8, seção 3), nunca um caminho alternativo que aceite sem o segundo fator.
+- **(Novo, 2026-07-08) Regra de alerta customizado (`alert_rules`) com métrica fora do tier da organização é rejeitada na criação** (`403 UPGRADE_REQUIRED`), e uma regra pré-existente cujo tier caiu depois (ex: downgrade Pro→Free) para de disparar sem erro visível ao usuário, apenas silenciosamente inativa — comportamento precisa ser testado explicitamente para não surpreender no downgrade.
+
+## 4. Testes que deliberadamente NÃO fazem parte do MVP
+
+- **Testes de carga/performance formais:** o volume esperado (Fase 3) não justifica esse investimento agora; revisitar se sintomas reais de lentidão aparecerem (mesmo princípio de "resolver quando o sintoma aparecer" já usado no particionamento de `snapshots`, Fase 4).
+- **Testes de penetração formais (pentest pago):** fora de orçamento no MVP; a Fase 5 (checklist de segurança) e a `security-review` (revisão de segurança do próprio código antes de cada release importante) cobrem o essencial nesse estágio. Reconsiderar contratar um pentest pontual quando houver receita recorrente que justifique o investimento e uma base de clientes que dependa disso para confiar no produto (público de segurança, Fase 1 seção 5, eventualmente vai perguntar).
+- **Testes de acessibilidade automatizados (axe-core, etc.):** a Fase 6-7 (seção 5) já estabeleceu acessibilidade básica pragmática, não completa — testes automatizados de acessibilidade são esforço desproporcional para esse nível de ambição no MVP.
+
+## 5. Quality gates no pipeline (integrado à Fase 9-10, CI/CD)
+
+- Todo push para `main` roda: lint (ex: `ruff` no backend, `eslint` no frontend) → testes unitários → testes de integração (contra Postgres efêmero no próprio runner do CI) → só então build/deploy.
+- Deploy bloqueado automaticamente se qualquer etapa falhar — não é uma sugestão, é um gate. Para uma pessoa só, isso substitui a revisão de código por um par que não existe: o pipeline é o "segundo par de olhos" mínimo viável.
+- Testes E2E (seção 2) não bloqueiam todo deploy (são mais lentos e mais frágeis) — rodam em pipeline separado, agendado (ex: diário) ou antes de releases maiores, não em todo commit.
+
+## 6. Ferramentas sugeridas (coerentes com a stack já decidida na Fase 3)
+
+| Camada | Ferramenta |
+|---|---|
+| Backend unitário/integração | `pytest` + `pytest-asyncio` (FastAPI é assíncrono) |
+| Banco de teste efêmero | `testcontainers` (sobe um Postgres real em container para os testes de integração, evita "funciona no SQLite de teste mas quebra no Postgres real") |
+| Frontend | `Vitest`/`Jest` + `React Testing Library` para componentes; `Playwright` para E2E (mais estável que Selenium, suporte nativo a esperar por rede) |
+| Lint/formatação | `ruff` (Python), `eslint`+`prettier` (TS/JS) |
+
+## 7. Onde esta estratégia de testes vai precisar evoluir (documentado de propósito)
+
+- Sem staging (Fase 9-10) significa que os testes automatizados são a única rede de segurança antes de produção — se a cobertura das áreas de risco alto (seção 1) cair, o risco real de regressão em produção sobe proporcionalmente; isso é motivo para não relaxar a prioridade dada a esses testes específicos, mesmo sob pressão de tempo. **Isso pesa ainda mais desde 2026-07-08:** sem staging e com escrita remota no v1, um bug que escapasse dos testes automatizados iria direto para produção com capacidade real de alterar firewall de cliente — reforça, não relaxa, a prioridade de nunca pular os quality gates da seção 5 sob pressão de tempo.
+- **(Parcialmente resolvido em 2026-07-08)** A mudança de categoria de teste que a escrita remota exigiria — "não basta testar que o dado é lido corretamente, é preciso testar que a alteração aplicada é exatamente a confirmada no preview" — já está refletida nos novos casos da seção 3. O que ainda falta e continua sendo dívida real: um ambiente de teste com um pfSense de fato (real ou emulado) para validar que o adapter de escrita (Fase 3, Padrões de projeto) produz comandos que o pfSense realmente aceita — os testes atuais cobrem o contrato do backend/fila, não a integração real contra a API do pfSense. Sem staging dedicado (Fase 9-10), isso continua sendo validado manualmente por Eduardo antes de cada release que toque o código de escrita, até que o volume de clientes justifique um ambiente de teste dedicado.
+- Testes de carga deliberadamente ausentes agora precisam existir antes do produto aceitar clientes MSP (Persona 2/Priya, centenas de firewalls por conta) — o gatilho é o mesmo já documentado na Fase 6-7 (seção 6) para os filtros/busca do dashboard: ambos são consequência do mesmo salto de escala.

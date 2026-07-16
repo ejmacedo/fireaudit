@@ -101,4 +101,48 @@ Estados possíveis:
 - Abas: Visão Geral (métricas básicas, todos os tiers) / Achados (Pro+) / Regras & VPN (Pro+, leitura; Premium, leitura + escrita) / Histórico de Alterações (Premium, novo — 2026-07-08) / Configurações (nome, token, exclusão).
 - Aba Achados: lista agrupada por severidade (crítico primeiro), cada achado expansível mostrando `details` (JSONB do schema da Fase 4) formatado de forma legível — não é para mostrar o JSON bruto ao usuário, é para a camada de apresentação traduzir cada `check_type` em um template de texto humano (ex: `risky_rule` → "Regra permite tráfego de qualquer origem para qualquer destino na interface WAN"; `duplicate_rule` → "Esta regra é idêntica à regra #N na mesma interface — considere removê-la").
 - Botão "marcar como resolvido" por achado (usa o campo `status` da tabela `findings`, Fase 4) — permite ao usuário reconhecer que já tratou algo sem esperar o próximo snapshot confirmar a correção automaticamente (que pode levar até o próximo ciclo de Cron).
-- **Achado `duplicate_rule` tem um botão adicional (Premium): "Corrigir agora"** — atalho que pré-preenche o fluxo de edição remota (seção 2.4) com um comando `del
+- **Achado `duplicate_rule` tem um botão adicional (Premium): "Corrigir agora"** — atalho que pré-preenche o fluxo de edição remota (seção 2.4) com um comando `delete_rule` da regra duplicada, poupando o usuário de navegar manualmente até a aba Regras & VPN para o caso mais comum (apagar a redundante). Continua passando pelo fluxo normal de preview + confirmação 2FA — o atalho é de navegação, não de bypass de segurança.
+- Estado "agente offline há X horas": banner de destaque no topo da tela de detalhe (não só um item na lista de achados) — é informação crítica o suficiente para merecer destaque visual próprio.
+- **Aba Regras & VPN — especificação de escrita (Premium), novo 2026-07-08:** lista de regras (mesma visualização que já existia para Pro+ read-only) ganha, por linha, os botões "Editar" e "Excluir" quando o tier é Premium; acima da lista, botão "Criar regra". Todos os três disparam o fluxo 2.4. Tiers Pro (sem Premium) veem a mesma lista sem esses botões, mais um banner sutil "Upgrade para Premium para editar regras diretamente" — mesmo padrão de teaser já estabelecido (seção 2.2), não uma tela diferente.
+- **Aba Histórico de Alterações (Premium), nova — 2026-07-08:** lista cronológica de `remote_change_logs` (Fase 8, `GET /v1/firewalls/{id}/change-log`) — cada entrada mostra quem fez a alteração, quando, um diff visual simples (antes/depois) e um botão "Desfazer esta alteração" que aciona o fluxo de rollback (Fase 8, `POST .../rollback`) — que por sua vez passa pelo mesmo fluxo de preview+confirmação 2FA da seção 2.4, nunca uma reversão de um clique sem novo consentimento.
+
+### 3.5 Configuração de alertas
+- Lista de canais configurados (email sempre existe por padrão, webhooks adicionados manualmente).
+- Ao adicionar webhook: campo de URL + botão "Testar" que dispara um alerta de teste imediatamente — confirma que a integração funciona antes do usuário depender dela em um incidente real (mesma lógica de "snapshot manual" aplicada a alertas).
+- Erro de teste de webhook: mostra o código de erro HTTP retornado pelo endpoint do cliente (ex: Slack retornou 404) — informação técnica é apropriada aqui dado o público (seção 1).
+
+### 3.6 Billing
+- Estado atual do plano sempre visível no topo (não escondido em "configurações") — usuário nunca deveria precisar procurar para saber o que está pagando.
+- Ao cancelar: nunca cancelamento imediato de um clique — confirmação explícita com resumo do que será perdido (acesso a regras/VPN, histórico de achados) antes de confirmar. Isso é consistente com a regra geral de "ações destrutivas exigem confirmação explícita" já usada para o tier Premium (Fase 2, regra de negócio).
+
+### 3.7 Criador de alertas customizados (tela) — novo, 2026-07-08
+- Nova aba dentro de "Alertas" (ao lado de "Canais", que já existia — seção 3.5): "Regras customizadas".
+- Tabela de regras existentes: métrica, condição em texto legível ("RAM > 50% por 5 min"), firewall(s) afetado(s), canal, toggle ativo/inativo (desativar sem excluir — útil para pausar temporariamente sem perder a configuração).
+- Estado vazio: CTA "Criar sua primeira regra de alerta", com o exemplo do Eduardo (RAM > 50%) como sugestão de texto no botão ou subtítulo — reduz a barreira de "não sei o que configurar".
+- Componentes shadcn/ui reaproveitados: `select` (métrica/operador/canal), `input` (valor limiar/duração), `switch` ou toggle (ativo/inativo), `table` (listagem) — nenhum componente novo fora da lista já mapeada em CLAUDE.md.
+
+### 3.8 Filtros de dashboard — novo, 2026-07-08
+- Barra de filtros acima da lista de firewalls/achados (dashboard principal, seção 3.3): severidade (crítico/alto/médio/baixo, multi-seleção), status do firewall (online/offline/pending, multi-seleção), e — só em Conta Multiempresa — empresa-cliente (seletor, reaproveitando a lista já usada no seletor de empresas do mockup).
+- Filtros são combináveis (ex: "crítico" + "offline" ao mesmo tempo) e persistem na URL como query params (`?severity=critical&status=offline`) — permite ao usuário salvar/compartilhar um link filtrado, e mantém o filtro ao recarregar a página.
+- Estado "nenhum resultado após filtro": mensagem "Nenhum firewall corresponde a estes filtros" + botão "Limpar filtros" — distinto do estado vazio geral (seção 4), porque aqui o problema é o filtro, não a ausência de dados reais.
+
+## 4. Estados transversais (aplicam-se a múltiplas telas)
+
+- **Loading:** skeleton screens em listas/cards; spinners apenas em ações pontuais (botão de submit).
+- **Vazio:** sempre com CTA de próximo passo, nunca mensagem passiva isolada.
+- **Erro de rede/servidor:** mensagem + ação de retry; nunca expor stack trace ou erro técnico bruto ao usuário final (log técnico vai para observability — Fase 9-10/12, não para a tela).
+- **Ação em processamento (ex: upgrade de plano, geração de relatório PDF):** feedback otimista com possibilidade de acompanhar status, evitando o usuário clicar múltiplas vezes por falta de feedback (ex: desabilitar botão + indicador de "processando" imediatamente ao clique).
+- **Permissão insuficiente (ex: usuário Free tentando acessar dado Pro via URL direta):** nunca uma tela de erro genérica — redireciona para o mesmo teaser de upgrade do dashboard (seção 2.2), mantendo a experiência de conversão consistente em qualquer ponto de entrada.
+
+## 5. Responsividade e acessibilidade (nível pragmático para o MVP)
+
+- Dashboard e telas administrativas: otimizadas primeiro para desktop (persona é administrador de TI trabalhando de estação de trabalho, não majoritariamente mobile) — responsividade mobile é "funcional, não primorosa" no MVP (ex: tabelas colapsam em cards, mas não há uma experiência mobile-first dedicada). Reconsiderar se dados de uso mostrarem acesso mobile relevante.
+- Acessibilidade básica não é opcional mesmo no MVP: contraste de cor adequado (especialmente nas cores de severidade — vermelho/amarelo/verde não podem ser o único indicador, sempre acompanhadas de texto/ícone para usuários com daltonismo), navegação por teclado funcional nos formulários principais (login, cadastro de firewall). Não é sobre compliance formal (WCAG completo é esforço desproporcional ao estágio), é sobre não excluir usuários por descuido barato de corrigir desde o início.
+
+## 6. Onde esta UX vai precisar evoluir (documentado de propósito)
+
+- A tela de espera do onboarding (seção 2.1) assume ciclo de Cron relativamente rápido para o teste manual — se o produto expandir para dispositivos com conectividade instável (ex: filiais remotas), esse fluxo de "aguardando primeiro check-in" precisa de um estado de timeout mais informativo do que hoje.
+- **(Resolvido em 2026-07-08)** Filtros de dashboard, antes mapeados para "v2/v3, não implementado no MVP de firewall único", agora existem desde o v1 (seção 3.8) — a necessidade ainda cresce com o volume (cenário MSP, Priya, com centenas de firewalls), mas a base já está no lançamento, não é mais uma lacuna conhecida.
+- **(Resolvido em 2026-07-08)** A aba "Regras & VPN" antes era somente leitura, com escrita prevista só para "quando o tier Premium (v5) chegar". Isso já está especificado (seção 3.4, 2.4) — a decisão de onde os controles de edição entram foi tomada (inline na mesma aba, não uma aba separada), não fica mais pendente.
+- **Novo (2026-07-08):** busca textual (não só filtro por categoria) na lista de firewalls/achados ainda não foi especificada — útil quando o número de firewalls crescer muito (cenário MSP com dezenas/centenas de clientes); os filtros combináveis da seção 3.8 cobrem o caso mais comum agora, busca por nome/texto livre é o próximo incremento natural quando o volume justificar.
+- **Novo (2026-07-08):** a tela de "Histórico de Alterações" (seção 3.4) especifica um diff "antes/depois" simples — para regras de firewall complexas com muitos campos, um diff visual mais sofisticado (lado a lado, campos alterados destacados) pode ser necessário; a versão simples é suficiente para o volume de mudança esperado no lançamento, não antecipar complexidade de UI que ainda não tem um caso de uso real que a justifique.

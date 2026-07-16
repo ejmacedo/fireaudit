@@ -327,4 +327,112 @@ CREATE TABLE alert_rules (
 );
 
 CREATE TABLE alert_deliveries (
-  id UUID PRIMARY KEY DEFAULT uuid_gen
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  finding_id UUID NULL REFERENCES findings(id) ON DELETE CASCADE,
+  alert_rule_id UUID NULL REFERENCES alert_rules(id) ON DELETE CASCADE,
+  alert_channel_id UUID NOT NULL REFERENCES alert_channels(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  sent_at TIMESTAMPTZ NULL,
+  error TEXT NULL,
+  CONSTRAINT chk_alert_delivery_origin CHECK (
+    (finding_id IS NOT NULL AND alert_rule_id IS NULL) OR
+    (finding_id IS NULL AND alert_rule_id IS NOT NULL)
+  )
+);
+
+CREATE TABLE subscriptions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  account_id UUID NOT NULL UNIQUE REFERENCES accounts(id) ON DELETE CASCADE,
+  tier TEXT NOT NULL DEFAULT 'free',
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  current_period_end TIMESTAMPTZ,
+  CONSTRAINT chk_subscription_status CHECK (status IN ('active', 'past_due', 'canceled'))
+);
+
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- NOVA (2026-07-08) — fila de comandos de escrita remota, tier Premium (seção 2.11)
+CREATE TABLE firewall_commands (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  firewall_id UUID NOT NULL REFERENCES firewalls(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id),
+  command_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  preview JSONB NULL,
+  status TEXT NOT NULL DEFAULT 'pending_confirmation',
+  confirmed_at TIMESTAMPTZ NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  applied_at TIMESTAMPTZ NULL,
+  CONSTRAINT chk_firewall_command_type CHECK (command_type IN ('create_rule', 'update_rule', 'delete_rule')),
+  CONSTRAINT chk_firewall_command_status CHECK (status IN (
+    'pending_confirmation', 'confirmed', 'sent_to_agent', 'applied', 'failed', 'rolled_back', 'expired'
+  ))
+);
+
+-- NOVA (2026-07-08) — log de auditoria imutável (hash-chain) da escrita remota (seção 2.12)
+CREATE TABLE remote_change_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  firewall_command_id UUID NOT NULL UNIQUE REFERENCES firewall_commands(id),
+  firewall_id UUID NOT NULL REFERENCES firewalls(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id),
+  before_state JSONB NOT NULL,
+  after_state JSONB NOT NULL,
+  applied_at TIMESTAMPTZ NOT NULL,
+  rolled_back_at TIMESTAMPTZ NULL,
+  rolled_back_by_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+  record_hash TEXT NOT NULL
+);
+```
+
+## 4. Índices e travas de aplicação
+
+**Índices** (cobrem os padrões de acesso mais frequentes citados em `fase9-10-performance-infra.md` seção 1.2: listagem por organização, achados por firewall+status+severidade):
+
+```sql
+CREATE INDEX idx_organizations_account_id ON organizations(account_id);
+CREATE INDEX idx_users_account_id ON users(account_id);
+CREATE INDEX idx_firewalls_organization_id ON firewalls(organization_id);
+CREATE INDEX idx_agent_tokens_firewall_id ON agent_tokens(firewall_id);
+CREATE INDEX idx_snapshots_firewall_id_received_at ON snapshots(firewall_id, received_at DESC);
+CREATE INDEX idx_snapshots_processing_status ON snapshots(processing_status) WHERE processing_status = 'queued';
+CREATE INDEX idx_findings_firewall_id_status_severity ON findings(firewall_id, status, severity);
+CREATE INDEX idx_findings_snapshot_id ON findings(snapshot_id);
+CREATE INDEX idx_alert_channels_organization_id ON alert_channels(organization_id);
+CREATE INDEX idx_alert_rules_organization_id ON alert_rules(organization_id);
+CREATE INDEX idx_alert_deliveries_alert_channel_id ON alert_deliveries(alert_channel_id);
+CREATE INDEX idx_firewall_commands_firewall_id_status ON firewall_commands(firewall_id, status);
+CREATE INDEX idx_remote_change_logs_firewall_id ON remote_change_logs(firewall_id);
+CREATE INDEX idx_audit_logs_organization_id ON audit_logs(organization_id);
+```
+
+`idx_snapshots_processing_status` é um índice parcial (só sobre `queued`) porque é exatamente essa fatia da tabela que a fila baseada em Postgres (Fase 3, seção 6) consulta a cada ciclo — indexar o restante (`done`/`failed`, que crescem sem limite) seria custo sem benefício de consulta.
+
+**Trava estrutural de "1 organização por conta `individual`" (citada nas seções 1 e 2.1):** não existe `CHECK`/`UNIQUE` físico no banco para isso — é validada em `application/CreateOrganization` (ver `CLAUDE.md`, seção de arquitetura), rejeitando a criação antes de chegar ao banco se a conta já tem 1 organização ativa (`deleted_at IS NULL`) e `account_type = 'individual'`. Ficou de fora do banco pelo mesmo racional já usado em outras regras desta fase (ex: métrica de `alert_rules` fora do tier, seção 2.13): é uma regra de negócio que precisa de contexto (contagem de organizações ativas daquela conta específica) mais barato de expressar e testar na camada de aplicação do que em uma constraint declarativa, e mantém a simetria com o resto do isolamento multi-tenant, que já é centralizado em `application` (Fase 5, seção 2) e não em constraints de banco.
+
+**Isolamento multi-tenant (`organization_id`):** toda query de dado de organização (firewalls, snapshots, findings, alert_channels, alert_rules, firewall_commands, remote_change_logs, audit_logs) filtra por `organization_id` do usuário autenticado — centralizado na camada de `application`, nunca decisão pontual de endpoint (Fase 5, seção 2). Os índices acima existem tanto por performance quanto porque são a mesma coluna usada nesse filtro em praticamente toda consulta do produto.
+
+## 5. Soft-delete
+
+`organizations`, `accounts`, `users` e `firewalls` usam `deleted_at TIMESTAMPTZ NULL` em vez de `DELETE` físico — motivo: são as entidades que sustentam histórico de billing (Stripe já referencia `account_id`/`organization_id` em disputas e reembolsos), auditoria (`audit_logs`/`remote_change_logs` referenciam `user_id`/`firewall_id` que não podem virar referência quebrada) e o "gatilho de reconsideração" documentado no LGPD/GDPR (`fase5-seguranca.md`) de que hard-delete/anonimização real é item pendente antes do lançamento comercial — soft-delete é o estado intermediário aceitável para o estágio atual, não a solução final de privacidade.
+
+Tabelas de fato/log (`snapshots`, `findings`, `alert_deliveries`, `firewall_commands`, `remote_change_logs`, `audit_logs`) **não** têm `deleted_at` — são apagadas via `ON DELETE CASCADE` quando o `firewall`/`organization` pai é removido (hard-delete em cascata), exceto `remote_change_logs`, que é append-only por convenção de aplicação (seção 2.12) e cuja política de retenção ainda não está definida (mesma pendência de LGPD/GDPR citada acima).
+
+Toda consulta de listagem nas tabelas com soft-delete deve filtrar `deleted_at IS NULL` — não há índice parcial dedicado para isso ainda porque o volume de registros soft-deleted é baixo no estágio atual (mesma lógica de "otimização sem problema correspondente" já usada em `fase9-10-performance-infra.md` seção 1.3); reconsiderar se o volume de contas/organizações canceladas crescer o suficiente para distorcer os índices da seção 4.
+
+## 6. Particionamento (deliberadamente adiado)
+
+`snapshots` é a tabela de maior volume do sistema (seção 2.5) e a única candidata real a particionamento neste schema — mas particionamento (por `firewall_id` ou por intervalo de `received_at`) está **deliberadamente fora do v1** (`CLAUDE.md`, lista "o que explicitamente NÃO existe no v1").
+
+**Por que adiar é seguro:** no volume esperado do MVP (poucos clientes, poucos firewalls por cliente, check-in a cada poucos minutos — RNF04 da Fase 2 assume até 20 firewalls por organização), o número de linhas em `snapshots` fica em uma faixa que o Postgres sem particionamento atende bem, com os índices da seção 4 já cobrindo o padrão de acesso mais comum (leitura do snapshot mais recente por firewall).
+
+**Gatilho de reconsideração:** o mesmo tipo de sinal usado nas outras decisões de infraestrutura adiada desta fase (cache em memória → Redis, rate limiting em memória → Redis, ver `fase9-10-performance-infra.md` seção 1.3) — quando o volume de linhas em `snapshots` começar a degradar o tempo de resposta do dashboard (RNF04, meta de <2s) ou o tempo de vacuum/backup da tabela crescer a ponto de impactar a janela de manutenção (`fase12-operacao-manutencao.md`), particionar por intervalo de tempo (mensal, por exemplo) é o próximo passo natural. Não implementar preventivamente — é overengineering para o volume atual, mesmo princípio já aplicado a outras decisões desta fase (ex: ausência de tabela de associação N:N em `firewalls`, seção 1).

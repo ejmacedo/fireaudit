@@ -130,5 +130,6 @@ def get_rotate_token(session: AsyncSession = Depends(get_db)) -> RotateToken:
 def get_ingest_snapshot(session: AsyncSession = Depends(get_db)) -> IngestSnapshot:
     return IngestSnapshot(
         snapshots=SqlAlchemySnapshotRepository(session),
+        firewalls=SqlAlchemyFirewallRepository(session),
         uow=SqlAlchemyUnitOfWork(session),
     )

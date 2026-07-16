@@ -7,6 +7,7 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure import models
@@ -88,8 +89,6 @@ async def test_ingest_valid_hmac_returns_202_and_queued(
     assert "snapshot_id" in data
     assert data["status"] == "queued"
 
-    from sqlalchemy import select
-
     result = await db_session.execute(
         select(models.Snapshot).where(models.Snapshot.id == uuid.UUID(data["snapshot_id"]))
     )
@@ -97,6 +96,12 @@ async def test_ingest_valid_hmac_returns_202_and_queued(
     assert row is not None
     assert row.processing_status == "queued"
     assert str(row.firewall_id) == fw_id
+
+    firewall = await db_session.get(models.Firewall, uuid.UUID(fw_id))
+    assert firewall is not None
+    assert firewall.status == "active"
+    assert firewall.last_seen_at is not None
+    assert firewall.pfsense_version == "2.7.0"
 
 
 @pytest.mark.asyncio
@@ -119,8 +124,6 @@ async def test_ingest_invalid_hmac_returns_422_no_db_record(
     )
     assert r.status_code == 422
     assert r.json()["error"]["code"] == "INVALID_SIGNATURE"
-
-    from sqlalchemy import select
 
     result = await db_session.execute(
         select(models.Snapshot).where(models.Snapshot.firewall_id == uuid.UUID(fw_id))
@@ -193,3 +196,47 @@ async def test_ingest_unknown_token_returns_401(client: AsyncClient):
     )
     assert r.status_code == 401
     assert r.json()["error"]["code"] == "INVALID_AGENT_TOKEN"
+
+
+@pytest.mark.asyncio
+async def test_ingest_rate_limit_is_scoped_to_agent_token(client: AsyncClient):
+    jwt = await _register_and_login(client)
+    _fw_id, plain_token = await _create_firewall_with_token(client, jwt)
+    body = json.dumps(_make_payload()).encode()
+    headers = {
+        "Authorization": f"Bearer {plain_token}",
+        "X-Signature": _sign(plain_token, body),
+        "Content-Type": "application/json",
+    }
+
+    first = await client.post("/v1/ingest/snapshot", content=body, headers=headers)
+    second = await client.post("/v1/ingest/snapshot", content=body, headers=headers)
+
+    assert first.status_code == 202
+    assert second.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_ingest_rejects_unexpected_top_level_field(
+    client: AsyncClient, db_session: AsyncSession
+):
+    jwt = await _register_and_login(client)
+    fw_id, plain_token = await _create_firewall_with_token(client, jwt)
+    payload = _make_payload() | {"unexpected": "not-allowed"}
+    body = json.dumps(payload).encode()
+
+    r = await client.post(
+        "/v1/ingest/snapshot",
+        content=body,
+        headers={
+            "Authorization": f"Bearer {plain_token}",
+            "X-Signature": _sign(plain_token, body),
+            "Content-Type": "application/json",
+        },
+    )
+
+    assert r.status_code == 422
+    result = await db_session.execute(
+        select(models.Snapshot).where(models.Snapshot.firewall_id == uuid.UUID(fw_id))
+    )
+    assert result.scalars().all() == []
