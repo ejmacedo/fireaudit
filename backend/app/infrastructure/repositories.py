@@ -4,7 +4,15 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.entities import Account, AgentToken, Firewall, Organization, RefreshToken, User
+from app.domain.entities import (
+    Account,
+    AgentToken,
+    Firewall,
+    Organization,
+    RefreshToken,
+    Snapshot,
+    User,
+)
 from app.infrastructure import models
 
 
@@ -276,6 +284,58 @@ class SqlAlchemyAgentTokenRepository:
             )
             .values(status="revoked", revoked_at=datetime.now(UTC))
         )
+        await self._session.execute(stmt)
+
+    async def get_by_token_hash(self, token_hash: str) -> AgentToken | None:
+        stmt = select(models.AgentToken).where(models.AgentToken.token_hash == token_hash)
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _agent_token_from_orm(row) if row else None
+
+
+def _snapshot_from_orm(row: models.Snapshot) -> Snapshot:
+    return Snapshot(
+        id=row.id,
+        firewall_id=row.firewall_id,
+        raw_payload=row.raw_payload,
+        processing_status=row.processing_status,
+        received_at=row.received_at,
+        processed_at=row.processed_at,
+    )
+
+
+class SqlAlchemySnapshotRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, snapshot: Snapshot) -> Snapshot:
+        row = models.Snapshot(
+            id=snapshot.id,
+            firewall_id=snapshot.firewall_id,
+            raw_payload=snapshot.raw_payload,
+            processing_status=snapshot.processing_status,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _snapshot_from_orm(row)
+
+    async def list_queued(self, limit: int = 10) -> list[Snapshot]:
+        stmt = (
+            select(models.Snapshot)
+            .where(models.Snapshot.processing_status == "queued")
+            .order_by(models.Snapshot.received_at)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+        )
+        result = await self._session.execute(stmt)
+        return [_snapshot_from_orm(row) for row in result.scalars().all()]
+
+    async def update_status(self, snapshot_id: uuid.UUID, status: str) -> None:
+        values: dict = {"processing_status": status}
+        if status == "done":
+            values["processed_at"] = datetime.now(UTC)
+        stmt = update(models.Snapshot).where(models.Snapshot.id == snapshot_id).values(**values)
         await self._session.execute(stmt)
 
 

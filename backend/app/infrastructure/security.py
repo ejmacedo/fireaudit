@@ -1,4 +1,5 @@
 import hashlib
+import hmac as _hmac
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -66,6 +67,19 @@ class JoseTokenService:
 
     def hash_refresh_token(self, plain: str) -> str:
         return hashlib.sha256(plain.encode("utf-8")).hexdigest()
+
+
+class HMACVerifier:
+    """HMAC-SHA256 signature verifier for snapshot ingest endpoint."""
+
+    @staticmethod
+    def compute(key: str, body: bytes) -> str:
+        return _hmac.new(key.encode(), body, hashlib.sha256).hexdigest()
+
+    @staticmethod
+    def verify(key: str, body: bytes, signature: str) -> bool:
+        expected = HMACVerifier.compute(key, body)
+        return _hmac.compare_digest(expected, signature)
 
 
 def build_token_service() -> JoseTokenService:

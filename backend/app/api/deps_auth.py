@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from dataclasses import dataclass
 
@@ -9,6 +10,7 @@ from app.domain.errors import InvalidRefreshTokenError
 from app.infrastructure.database import get_db
 from app.infrastructure.repositories import (
     SqlAlchemyAccountRepository,
+    SqlAlchemyAgentTokenRepository,
     SqlAlchemyOrganizationRepository,
     SqlAlchemyUserRepository,
 )
@@ -85,3 +87,39 @@ async def get_current_user(
     orgs = await orgs_repo.list_active_for_account(account.id)
 
     return AuthContext(user=user, account=account, organizations=orgs)
+
+
+@dataclass(frozen=True)
+class AgentContext:
+    agent_token_id: uuid.UUID
+    firewall_id: uuid.UUID
+    token_hash: str
+
+
+def _agent_http_error(code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail={"error": {"code": code, "message": message, "details": None}},
+    )
+
+
+async def get_current_agent(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> AgentContext:
+    plain_token = _extract_bearer(request)
+    token_hash = hashlib.sha256(plain_token.encode()).hexdigest()
+
+    repo = SqlAlchemyAgentTokenRepository(session)
+    token = await repo.get_by_token_hash(token_hash)
+
+    if token is None:
+        raise _agent_http_error("INVALID_AGENT_TOKEN", "Agent token not recognized.")
+    if token.status != "active":
+        raise _agent_http_error("AGENT_TOKEN_REVOKED", "Agent token has been revoked.")
+
+    return AgentContext(
+        agent_token_id=token.id,
+        firewall_id=token.firewall_id,
+        token_hash=token_hash,
+    )

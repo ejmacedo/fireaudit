@@ -36,3 +36,15 @@ class FirewallNotFoundError(DomainError):
 
 class FirewallNameEmptyError(DomainError):
     """Firewall name cannot be empty."""
+
+
+class AgentTokenNotFoundError(DomainError):
+    """Agent token not recognized."""
+
+
+class AgentTokenRevokedError(DomainError):
+    """Agent token exists but has been revoked."""
+
+
+class InvalidHMACSignatureError(DomainError):
+    """X-Signature header does not match the expected HMAC-SHA256 of the body."""
