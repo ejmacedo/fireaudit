@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.use_cases.create_firewall import CreateFirewall
 from app.application.use_cases.delete_firewall import DeleteFirewall
 from app.application.use_cases.get_firewall import GetFirewall
+from app.application.use_cases.ingest_snapshot import IngestSnapshot
 from app.application.use_cases.list_firewalls import ListFirewalls
 from app.application.use_cases.login_user import LoginUser
 from app.application.use_cases.logout_user import LogoutUser
@@ -22,6 +23,7 @@ from app.infrastructure.repositories import (
     SqlAlchemyFirewallRepository,
     SqlAlchemyOrganizationRepository,
     SqlAlchemyRefreshTokenRepository,
+    SqlAlchemySnapshotRepository,
     SqlAlchemyUnitOfWork,
     SqlAlchemyUserRepository,
 )
@@ -121,5 +123,12 @@ def get_rotate_token(session: AsyncSession = Depends(get_db)) -> RotateToken:
     return RotateToken(
         firewalls=SqlAlchemyFirewallRepository(session),
         agent_tokens=SqlAlchemyAgentTokenRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_ingest_snapshot(session: AsyncSession = Depends(get_db)) -> IngestSnapshot:
+    return IngestSnapshot(
+        snapshots=SqlAlchemySnapshotRepository(session),
         uow=SqlAlchemyUnitOfWork(session),
     )

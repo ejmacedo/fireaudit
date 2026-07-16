@@ -70,3 +70,13 @@ class AgentToken:
     status: str = "active"
     created_at: datetime | None = None
     revoked_at: datetime | None = None
+
+
+@dataclass
+class Snapshot:
+    firewall_id: uuid.UUID
+    raw_payload: dict
+    id: uuid.UUID = field(default_factory=_new_id)
+    processing_status: str = "queued"
+    received_at: datetime | None = None
+    processed_at: datetime | None = None

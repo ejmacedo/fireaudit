@@ -2,7 +2,15 @@ import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
-from app.domain.entities import Account, AgentToken, Firewall, Organization, RefreshToken, User
+from app.domain.entities import (
+    Account,
+    AgentToken,
+    Firewall,
+    Organization,
+    RefreshToken,
+    Snapshot,
+    User,
+)
 
 
 class AccountRepository(Protocol):
@@ -62,6 +70,13 @@ class AgentTokenRepository(Protocol):
     async def create(self, token: AgentToken) -> AgentToken: ...
     async def get_active_for_firewall(self, firewall_id: uuid.UUID) -> AgentToken | None: ...
     async def revoke_all_for_firewall(self, firewall_id: uuid.UUID) -> None: ...
+    async def get_by_token_hash(self, token_hash: str) -> AgentToken | None: ...
+
+
+class SnapshotRepository(Protocol):
+    async def create(self, snapshot: Snapshot) -> Snapshot: ...
+    async def list_queued(self, limit: int = 10) -> list[Snapshot]: ...
+    async def update_status(self, snapshot_id: uuid.UUID, status: str) -> None: ...
 
 
 class UnitOfWork(Protocol):
