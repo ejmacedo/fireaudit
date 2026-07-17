@@ -80,3 +80,16 @@ class Snapshot:
     processing_status: str = "queued"
     received_at: datetime | None = None
     processed_at: datetime | None = None
+
+
+@dataclass
+class Finding:
+    firewall_id: uuid.UUID
+    snapshot_id: uuid.UUID
+    check_type: str
+    severity: str
+    details: dict
+    id: uuid.UUID = field(default_factory=_new_id)
+    status: str = "open"
+    created_at: datetime | None = None
+    resolved_at: datetime | None = None

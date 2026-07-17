@@ -5,6 +5,7 @@ from typing import Protocol
 from app.domain.entities import (
     Account,
     AgentToken,
+    Finding,
     Firewall,
     Organization,
     RefreshToken,
@@ -85,3 +86,16 @@ class SnapshotRepository(Protocol):
 class UnitOfWork(Protocol):
     async def commit(self) -> None: ...
     async def rollback(self) -> None: ...
+
+
+class FindingRepository(Protocol):
+    async def create(self, finding: Finding) -> Finding: ...
+    async def get_open_by_check_type(
+        self, firewall_id: uuid.UUID, check_type: str
+    ) -> Finding | None: ...
+
+
+class AnalysisCheck(Protocol):
+    check_type: str
+
+    def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]: ...

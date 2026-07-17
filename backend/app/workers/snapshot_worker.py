@@ -5,8 +5,15 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.application.checks.agent_offline import AgentOfflineCheck
+from app.application.use_cases.analyze_snapshot import AnalyzeSnapshot, AnalyzeSnapshotRequest
 from app.core.config import settings
-from app.infrastructure.repositories import SqlAlchemySnapshotRepository
+from app.infrastructure.repositories import (
+    SqlAlchemyFindingRepository,
+    SqlAlchemyFirewallRepository,
+    SqlAlchemySnapshotRepository,
+    SqlAlchemyUnitOfWork,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +21,32 @@ _POLL_INTERVAL_SECONDS = 30
 _BATCH_SIZE = 10
 
 
+def _build_analyze_snapshot(session: AsyncSession) -> AnalyzeSnapshot:
+    checks = [AgentOfflineCheck(threshold_minutes=settings.agent_offline_threshold_minutes)]
+    return AnalyzeSnapshot(
+        checks=checks,
+        findings=SqlAlchemyFindingRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
 async def _process_batch(session: AsyncSession) -> int:
-    repo = SqlAlchemySnapshotRepository(session)
-    snapshots = await repo.list_queued(limit=_BATCH_SIZE)
+    snapshot_repo = SqlAlchemySnapshotRepository(session)
+    firewall_repo = SqlAlchemyFirewallRepository(session)
+    analyze_snapshot = _build_analyze_snapshot(session)
+
+    snapshots = await snapshot_repo.list_queued(limit=_BATCH_SIZE)
     for snapshot in snapshots:
-        await repo.update_status(snapshot.id, "processing")
+        await snapshot_repo.update_status(snapshot.id, "processing")
         await session.commit()
-        # Phase 6: run compliance analysis here
-        await repo.update_status(snapshot.id, "done")
+
+        firewall = await firewall_repo.get_by_id(snapshot.firewall_id)
+        if firewall is not None:
+            await analyze_snapshot.execute(
+                AnalyzeSnapshotRequest(firewall=firewall, snapshot=snapshot)
+            )
+
+        await snapshot_repo.update_status(snapshot.id, "done")
         await session.commit()
     return len(snapshots)
 

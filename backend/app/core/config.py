@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Sentry
     sentry_dsn: str = ""
 
+    # Analysis engine
+    agent_offline_threshold_minutes: int = 30
+
     # Environment
     environment: str = "development"
 
