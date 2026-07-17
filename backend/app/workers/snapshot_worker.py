@@ -1,11 +1,18 @@
 """Snapshot processing worker — polls snapshots WHERE processing_status='queued'."""
 
 import asyncio
+import json
 import logging
+from functools import lru_cache
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.application.checks.agent_offline import AgentOfflineCheck
+from app.application.checks.duplicate_rule import DuplicateRuleCheck
+from app.application.checks.expiring_cert import ExpiringCertCheck
+from app.application.checks.known_cve import KnownCveCheck
+from app.application.checks.risky_rule import RiskyRuleCheck
 from app.application.use_cases.analyze_snapshot import AnalyzeSnapshot, AnalyzeSnapshotRequest
 from app.core.config import settings
 from app.infrastructure.repositories import (
@@ -19,10 +26,26 @@ logger = logging.getLogger(__name__)
 
 _POLL_INTERVAL_SECONDS = 30
 _BATCH_SIZE = 10
+_KNOWN_CVES_PATH = (
+    Path(__file__).resolve().parent.parent / "application" / "checks" / "data" / "known_cves.json"
+)
+
+
+@lru_cache(maxsize=1)
+def _load_known_cves() -> dict[str, list[dict]]:
+    with _KNOWN_CVES_PATH.open(encoding="utf-8") as f:
+        data = json.load(f)
+    return {key: value for key, value in data.items() if not key.startswith("_")}
 
 
 def _build_analyze_snapshot(session: AsyncSession) -> AnalyzeSnapshot:
-    checks = [AgentOfflineCheck(threshold_minutes=settings.agent_offline_threshold_minutes)]
+    checks = [
+        AgentOfflineCheck(threshold_minutes=settings.agent_offline_threshold_minutes),
+        RiskyRuleCheck(),
+        ExpiringCertCheck(threshold_days=settings.expiring_cert_threshold_days),
+        KnownCveCheck(known_cves=_load_known_cves()),
+        DuplicateRuleCheck(),
+    ]
     return AnalyzeSnapshot(
         checks=checks,
         findings=SqlAlchemyFindingRepository(session),

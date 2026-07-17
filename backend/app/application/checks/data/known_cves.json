@@ -1,0 +1,17 @@
+{
+  "_comment": "Curated version-to-CVE mapping for pfSense CE. Maintained manually, no live network lookup (see docs/specs/fase12-operacao-manutencao.md sec 2: review this file monthly against the NVD feed / Netgate security advisories). Keys are pfsense_version strings as reported by the agent; values are lists of known CVEs affecting that exact version. Entries below are verified against nvd.nist.gov, not placeholders.",
+  "2.4.4-RELEASE": [
+    {
+      "cve_id": "CVE-2018-4019",
+      "severity": "high",
+      "description": "Authenticated command injection in pfSense CE 2.4.4-RELEASE via the powerd_normal_mode POST parameter."
+    }
+  ],
+  "2.4.4_1": [
+    {
+      "cve_id": "CVE-2018-20798",
+      "severity": "medium",
+      "description": "pfSense 2.4.4_1 expiretable block duration configuration incompatibility allows bypass of sshguard blocking restrictions."
+    }
+  ]
+}
