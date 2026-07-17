@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # Analysis engine
     agent_offline_threshold_minutes: int = 30
+    expiring_cert_threshold_days: int = 30
 
     # Environment
     environment: str = "development"
