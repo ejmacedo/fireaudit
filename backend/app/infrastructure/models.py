@@ -129,9 +129,11 @@ class Snapshot(Base):
     firewall_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("firewalls.id", ondelete="CASCADE"), nullable=False
     )
-    received_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
+    received_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )
     raw_payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    processed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     processing_status: Mapped[str] = mapped_column(Text, nullable=False, server_default="queued")
 
 
@@ -151,8 +153,10 @@ class Finding(Base):
     severity: Mapped[str] = mapped_column(Text, nullable=False)
     details: Mapped[dict] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="open")
-    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
-    resolved_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
 
 class AlertChannel(Base):
