@@ -351,6 +351,17 @@ class SqlAlchemySnapshotRepository:
         stmt = update(models.Snapshot).where(models.Snapshot.id == snapshot_id).values(**values)
         await self._session.execute(stmt)
 
+    async def get_latest_for_firewall(self, firewall_id: uuid.UUID) -> Snapshot | None:
+        stmt = (
+            select(models.Snapshot)
+            .where(models.Snapshot.firewall_id == firewall_id)
+            .order_by(models.Snapshot.received_at.desc())
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _snapshot_from_orm(row) if row else None
+
 
 def _finding_from_orm(row: models.Finding) -> Finding:
     return Finding(
@@ -396,6 +407,62 @@ class SqlAlchemyFindingRepository:
         result = await self._session.execute(stmt)
         row = result.scalar_one_or_none()
         return _finding_from_orm(row) if row else None
+
+    async def list_for_firewall(
+        self,
+        firewall_id: uuid.UUID,
+        status: str | None,
+        severity: str | None,
+        check_type: str | None,
+    ) -> list[Finding]:
+        stmt = select(models.Finding).where(models.Finding.firewall_id == firewall_id)
+        if status is not None:
+            stmt = stmt.where(models.Finding.status == status)
+        if severity is not None:
+            stmt = stmt.where(models.Finding.severity == severity)
+        if check_type is not None:
+            stmt = stmt.where(models.Finding.check_type == check_type)
+        stmt = stmt.order_by(models.Finding.created_at.desc())
+        result = await self._session.execute(stmt)
+        return [_finding_from_orm(row) for row in result.scalars().all()]
+
+    async def count_open_grouped_by_severity(
+        self, firewall_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, dict[str, int]]:
+        if not firewall_ids:
+            return {}
+        stmt = (
+            select(
+                models.Finding.firewall_id,
+                models.Finding.severity,
+                func.count().label("count"),
+            )
+            .where(
+                models.Finding.firewall_id.in_(firewall_ids),
+                models.Finding.status == "open",
+            )
+            .group_by(models.Finding.firewall_id, models.Finding.severity)
+        )
+        result = await self._session.execute(stmt)
+        counts: dict[uuid.UUID, dict[str, int]] = {}
+        for firewall_id, severity, count in result.all():
+            counts.setdefault(firewall_id, {})[severity] = count
+        return counts
+
+    async def get_by_id(self, finding_id: uuid.UUID) -> Finding | None:
+        row = await self._session.get(models.Finding, finding_id)
+        return _finding_from_orm(row) if row else None
+
+    async def update_status(self, finding_id: uuid.UUID, status: str) -> Finding:
+        row = await self._session.get(models.Finding, finding_id)
+        if row is None:
+            raise ValueError(f"Finding {finding_id} not found")
+        row.status = status
+        if status == "resolved":
+            row.resolved_at = datetime.now(UTC)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _finding_from_orm(row)
 
 
 class SqlAlchemyUnitOfWork:

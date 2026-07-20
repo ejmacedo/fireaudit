@@ -35,6 +35,12 @@ class FirewallResponse(BaseModel):
     last_seen_at: datetime | None
     created_at: datetime | None
     updated_at: datetime | None
+    open_findings_by_severity: dict[str, int] = {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+    }
 
 
 class CreateFirewallResponse(BaseModel):

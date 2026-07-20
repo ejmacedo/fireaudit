@@ -4,7 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.use_cases.create_firewall import CreateFirewall
 from app.application.use_cases.delete_firewall import DeleteFirewall
 from app.application.use_cases.get_firewall import GetFirewall
+from app.application.use_cases.get_firewall_rules import GetFirewallRules
+from app.application.use_cases.get_firewall_vpn_tunnels import GetFirewallVpnTunnels
 from app.application.use_cases.ingest_snapshot import IngestSnapshot
+from app.application.use_cases.list_findings import ListFindings
 from app.application.use_cases.list_firewalls import ListFirewalls
 from app.application.use_cases.login_user import LoginUser
 from app.application.use_cases.logout_user import LogoutUser
@@ -14,12 +17,14 @@ from app.application.use_cases.register_account import (
     RegisterMultiempresaAccount,
 )
 from app.application.use_cases.rename_firewall import RenameFirewall
+from app.application.use_cases.resolve_finding import ResolveFinding
 from app.application.use_cases.rotate_token import RotateToken
 from app.core.config import settings
 from app.infrastructure.database import get_db
 from app.infrastructure.repositories import (
     SqlAlchemyAccountRepository,
     SqlAlchemyAgentTokenRepository,
+    SqlAlchemyFindingRepository,
     SqlAlchemyFirewallRepository,
     SqlAlchemyOrganizationRepository,
     SqlAlchemyRefreshTokenRepository,
@@ -97,11 +102,17 @@ def get_create_firewall(session: AsyncSession = Depends(get_db)) -> CreateFirewa
 
 
 def get_list_firewalls(session: AsyncSession = Depends(get_db)) -> ListFirewalls:
-    return ListFirewalls(firewalls=SqlAlchemyFirewallRepository(session))
+    return ListFirewalls(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        findings=SqlAlchemyFindingRepository(session),
+    )
 
 
 def get_get_firewall(session: AsyncSession = Depends(get_db)) -> GetFirewall:
-    return GetFirewall(firewalls=SqlAlchemyFirewallRepository(session))
+    return GetFirewall(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        findings=SqlAlchemyFindingRepository(session),
+    )
 
 
 def get_rename_firewall(session: AsyncSession = Depends(get_db)) -> RenameFirewall:
@@ -132,4 +143,35 @@ def get_ingest_snapshot(session: AsyncSession = Depends(get_db)) -> IngestSnapsh
         snapshots=SqlAlchemySnapshotRepository(session),
         firewalls=SqlAlchemyFirewallRepository(session),
         uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_list_findings(session: AsyncSession = Depends(get_db)) -> ListFindings:
+    return ListFindings(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        findings=SqlAlchemyFindingRepository(session),
+    )
+
+
+def get_resolve_finding(session: AsyncSession = Depends(get_db)) -> ResolveFinding:
+    return ResolveFinding(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        findings=SqlAlchemyFindingRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_get_firewall_rules(session: AsyncSession = Depends(get_db)) -> GetFirewallRules:
+    return GetFirewallRules(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        snapshots=SqlAlchemySnapshotRepository(session),
+    )
+
+
+def get_get_firewall_vpn_tunnels(
+    session: AsyncSession = Depends(get_db),
+) -> GetFirewallVpnTunnels:
+    return GetFirewallVpnTunnels(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        snapshots=SqlAlchemySnapshotRepository(session),
     )
