@@ -2,10 +2,12 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
 
 # Claude Code — notas/permissões pessoais, não versionar
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/launch.json
 
 # Python
 __pycache__/

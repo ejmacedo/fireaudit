@@ -38,6 +38,10 @@ class FirewallNameEmptyError(DomainError):
     """Firewall name cannot be empty."""
 
 
+class FindingNotFoundError(DomainError):
+    """Finding not found or does not belong to the given firewall."""
+
+
 class AgentTokenNotFoundError(DomainError):
     """Agent token not recognized."""
 
