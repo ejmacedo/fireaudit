@@ -39,8 +39,10 @@ import {
 } from "@/lib/api/firewalls";
 import { listFindings, resolveFinding, type Finding } from "@/lib/api/findings";
 import { getFirewallRules, getFirewallVpnTunnels } from "@/lib/api/rules";
+import { isUpgradeRequiredError } from "@/lib/api/errors";
 import { SEVERITY_ORDER, type Severity } from "@/lib/severity";
 import { statusDotColor, statusLabel, formatLastSeen } from "@/lib/firewall-status";
+import { UpgradeRequiredCard } from "@/components/upgrade-required-card";
 
 function FindingDetails({ details }: { details: Record<string, unknown> }) {
   const entries = Object.entries(details);
@@ -110,9 +112,10 @@ function OverviewTab({ firewallId }: { firewallId: string }) {
 
 function FindingsTab({ firewallId }: { firewallId: string }) {
   const queryClient = useQueryClient();
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["findings", firewallId],
     queryFn: () => listFindings(firewallId, { status: "open" }),
+    retry: (failureCount, err) => !isUpgradeRequiredError(err) && failureCount < 3,
   });
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
@@ -152,6 +155,9 @@ function FindingsTab({ firewallId }: { firewallId: string }) {
   }
 
   if (isError) {
+    if (isUpgradeRequiredError(error)) {
+      return <UpgradeRequiredCard featureLabel="findings" />;
+    }
     return (
       <Alert variant="destructive">
         <AlertTitle>Could not load findings</AlertTitle>
@@ -214,13 +220,19 @@ function RulesVpnTab({ firewallId }: { firewallId: string }) {
   const rulesQuery = useQuery({
     queryKey: ["rules", firewallId],
     queryFn: () => getFirewallRules(firewallId),
+    retry: (failureCount, err) => !isUpgradeRequiredError(err) && failureCount < 3,
   });
   const vpnQuery = useQuery({
     queryKey: ["vpn-tunnels", firewallId],
     queryFn: () => getFirewallVpnTunnels(firewallId),
+    retry: (failureCount, err) => !isUpgradeRequiredError(err) && failureCount < 3,
   });
 
   const isLoading = rulesQuery.isLoading || vpnQuery.isLoading;
+
+  if (isUpgradeRequiredError(rulesQuery.error) || isUpgradeRequiredError(vpnQuery.error)) {
+    return <UpgradeRequiredCard featureLabel="firewall rules and VPN tunnels" />;
+  }
 
   if (isLoading) {
     return (

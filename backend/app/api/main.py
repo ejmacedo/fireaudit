@@ -7,7 +7,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.api.routers import auth, firewalls, health, ingest, me
+from app.api.routers import auth, firewalls, health, ingest, me, subscription
 from app.core.config import settings
 
 if settings.sentry_dsn:
@@ -54,3 +54,4 @@ app.include_router(auth.router, prefix="/v1")
 app.include_router(me.router, prefix="/v1")
 app.include_router(firewalls.router, prefix="/v1")
 app.include_router(ingest.router, prefix="/v1/ingest")
+app.include_router(subscription.router, prefix="/v1")

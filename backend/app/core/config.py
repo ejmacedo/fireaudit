@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Stripe
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    stripe_price_id_pro: str = ""
+    stripe_success_url: str = "http://localhost:3000/dashboard?checkout=success"
+    stripe_cancel_url: str = "http://localhost:3000/dashboard?checkout=cancel"
 
     # KMS
     kms_provider: str = "local"

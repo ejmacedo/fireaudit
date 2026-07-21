@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 
 from app.domain.entities import (
@@ -10,7 +11,9 @@ from app.domain.entities import (
     Organization,
     RefreshToken,
     Snapshot,
+    Subscription,
     User,
+    WebhookEvent,
 )
 
 
@@ -112,3 +115,49 @@ class AnalysisCheck(Protocol):
     check_type: str
 
     def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]: ...
+
+
+class SubscriptionRepository(Protocol):
+    async def create(self, subscription: Subscription) -> Subscription: ...
+    async def get_by_account_id(self, account_id: uuid.UUID) -> Subscription | None: ...
+    async def update_from_stripe_event(
+        self,
+        account_id: uuid.UUID,
+        *,
+        tier: str,
+        status: str,
+        stripe_customer_id: str | None = None,
+        stripe_subscription_id: str | None = None,
+        current_period_end: datetime | None = None,
+    ) -> Subscription: ...
+
+
+class WebhookEventRepository(Protocol):
+    async def exists(self, event_id: str) -> bool: ...
+    async def create(self, event_id: str, event_type: str) -> WebhookEvent: ...
+
+
+@dataclass(frozen=True)
+class CheckoutSession:
+    url: str
+    session_id: str
+
+
+@dataclass(frozen=True)
+class ParsedWebhookEvent:
+    event_id: str
+    event_type: str
+    data: dict
+
+
+class PaymentGateway(Protocol):
+    def create_checkout_session(
+        self,
+        *,
+        account_id: uuid.UUID,
+        customer_email: str,
+        success_url: str,
+        cancel_url: str,
+    ) -> CheckoutSession: ...
+
+    def verify_webhook_signature(self, body: bytes, signature: str) -> ParsedWebhookEvent: ...

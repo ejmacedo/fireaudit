@@ -93,3 +93,22 @@ class Finding:
     status: str = "open"
     created_at: datetime | None = None
     resolved_at: datetime | None = None
+
+
+@dataclass
+class Subscription:
+    account_id: uuid.UUID
+    id: uuid.UUID = field(default_factory=_new_id)
+    tier: str = "free"  # "free" | "pro" | "premium" (premium reserved for Fase 11)
+    status: str = "active"  # "active" | "past_due" | "canceled"
+    stripe_customer_id: str | None = None
+    stripe_subscription_id: str | None = None
+    current_period_end: datetime | None = None
+
+
+@dataclass
+class WebhookEvent:
+    event_id: str
+    event_type: str
+    id: uuid.UUID = field(default_factory=_new_id)
+    processed_at: datetime | None = None

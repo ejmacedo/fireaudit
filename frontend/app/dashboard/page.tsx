@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Shield } from "lucide-react";
@@ -30,8 +31,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listFirewalls, createFirewall, type Firewall } from "@/lib/api/firewalls";
+import { getSubscription } from "@/lib/api/subscription";
 import { SEVERITY_ORDER, severityRank, type Severity } from "@/lib/severity";
 import { statusDotColor, statusLabel, formatLastSeen } from "@/lib/firewall-status";
+import { UpgradeTeaser } from "@/components/upgrade-teaser";
 
 function sortFirewalls(firewalls: Firewall[]): Firewall[] {
   return [...firewalls].sort((a, b) => {
@@ -53,10 +56,31 @@ function sortFirewalls(firewalls: Firewall[]): Firewall[] {
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["firewalls"],
     queryFn: listFirewalls,
   });
+  const { data: subscription } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: getSubscription,
+  });
+
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (checkout === "success") {
+      toast.success("Welcome to Pro! Your account has been upgraded.");
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["firewalls"] });
+      router.replace("/dashboard");
+    } else if (checkout === "cancel") {
+      toast.info("Checkout canceled — you can upgrade any time.");
+      router.replace("/dashboard");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newFirewallName, setNewFirewallName] = useState("");
@@ -116,6 +140,14 @@ export default function DashboardPage() {
         </div>
         <Button onClick={() => setDialogOpen(true)}>+ Add firewall</Button>
       </div>
+
+      {subscription?.tier === "free" && (
+        <UpgradeTeaser
+          totalOpenFindings={totals.critical + totals.certExpiring}
+          criticalCount={totals.critical}
+          highCount={totals.certExpiring}
+        />
+      )}
 
       {isLoading && (
         <div className="space-y-4">

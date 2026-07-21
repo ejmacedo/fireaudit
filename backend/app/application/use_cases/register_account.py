@@ -5,10 +5,11 @@ from app.application.protocols import (
     AccountRepository,
     OrganizationRepository,
     PasswordHasher,
+    SubscriptionRepository,
     UnitOfWork,
     UserRepository,
 )
-from app.domain.entities import Account, Organization, User
+from app.domain.entities import Account, Organization, Subscription, User
 from app.domain.errors import EmailAlreadyRegisteredError
 
 
@@ -39,12 +40,14 @@ class RegisterIndividualAccount:
         accounts: AccountRepository,
         organizations: OrganizationRepository,
         users: UserRepository,
+        subscriptions: SubscriptionRepository,
         hasher: PasswordHasher,
         uow: UnitOfWork,
     ) -> None:
         self._accounts = accounts
         self._organizations = organizations
         self._users = users
+        self._subscriptions = subscriptions
         self._hasher = hasher
         self._uow = uow
 
@@ -63,6 +66,9 @@ class RegisterIndividualAccount:
                 password_hash=self._hasher.hash(request.password),
             )
         )
+        await self._subscriptions.create(
+            Subscription(account_id=account.id, tier="free", status="active")
+        )
         await self._uow.commit()
         return RegisterResult(
             account_id=account.id,
@@ -76,11 +82,13 @@ class RegisterMultiempresaAccount:
         self,
         accounts: AccountRepository,
         users: UserRepository,
+        subscriptions: SubscriptionRepository,
         hasher: PasswordHasher,
         uow: UnitOfWork,
     ) -> None:
         self._accounts = accounts
         self._users = users
+        self._subscriptions = subscriptions
         self._hasher = hasher
         self._uow = uow
 
@@ -97,6 +105,12 @@ class RegisterMultiempresaAccount:
                 email=request.email,
                 password_hash=self._hasher.hash(request.password),
             )
+        )
+        # Multiempresa is always Pro-equivalent per pricing (fase2-prd.md §6.1), but
+        # subscription starts as free until they add a paying organization. Real
+        # per-organization billing (volume tiers) is out of scope for Fase 8.
+        await self._subscriptions.create(
+            Subscription(account_id=account.id, tier="free", status="active")
         )
         await self._uow.commit()
         return RegisterResult(

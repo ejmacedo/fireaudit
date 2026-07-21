@@ -14,6 +14,7 @@ from app.api.deps import (
     get_rename_firewall,
     get_resolve_finding,
     get_rotate_token,
+    require_tier,
 )
 from app.api.deps_auth import AuthContext, get_current_user
 from app.api.errors import error_response
@@ -302,7 +303,7 @@ async def list_findings(
     status_filter: str | None = None,
     severity: str | None = None,
     check_type: str | None = None,
-    ctx: AuthContext = Depends(get_current_user),
+    ctx: AuthContext = Depends(require_tier("pro")),
     use_case: ListFindings = Depends(get_list_findings),
 ) -> ListFindingsResponse | JSONResponse:
     if not ctx.organization_ids:
@@ -339,7 +340,7 @@ async def resolve_finding(
     firewall_id: uuid.UUID,
     finding_id: uuid.UUID,
     payload: ResolveFindingPayload,
-    ctx: AuthContext = Depends(get_current_user),
+    ctx: AuthContext = Depends(require_tier("pro")),
     use_case: ResolveFinding = Depends(get_resolve_finding),
 ) -> FindingResponse | JSONResponse:
     if not ctx.organization_ids:
@@ -378,7 +379,7 @@ async def resolve_finding(
 )
 async def get_firewall_rules(
     firewall_id: uuid.UUID,
-    ctx: AuthContext = Depends(get_current_user),
+    ctx: AuthContext = Depends(require_tier("pro")),
     use_case: GetFirewallRules = Depends(get_get_firewall_rules),
 ) -> RulesResponse | JSONResponse:
     if not ctx.organization_ids:
@@ -410,7 +411,7 @@ async def get_firewall_rules(
 )
 async def get_firewall_vpn_tunnels(
     firewall_id: uuid.UUID,
-    ctx: AuthContext = Depends(get_current_user),
+    ctx: AuthContext = Depends(require_tier("pro")),
     use_case: GetFirewallVpnTunnels = Depends(get_get_firewall_vpn_tunnels),
 ) -> VpnTunnelsResponse | JSONResponse:
     if not ctx.organization_ids:

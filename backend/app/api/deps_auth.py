@@ -5,13 +5,14 @@ from dataclasses import dataclass
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.entities import Account, Organization, User
+from app.domain.entities import Account, Organization, Subscription, User
 from app.domain.errors import InvalidRefreshTokenError
 from app.infrastructure.database import get_db
 from app.infrastructure.repositories import (
     SqlAlchemyAccountRepository,
     SqlAlchemyAgentTokenRepository,
     SqlAlchemyOrganizationRepository,
+    SqlAlchemySubscriptionRepository,
     SqlAlchemyUserRepository,
 )
 from app.infrastructure.security import build_token_service
@@ -22,6 +23,7 @@ class AuthContext:
     user: User
     account: Account
     organizations: list[Organization]
+    subscription: Subscription
 
     @property
     def organization_ids(self) -> set[uuid.UUID]:
@@ -71,6 +73,7 @@ async def get_current_user(
     users_repo = SqlAlchemyUserRepository(session)
     accounts_repo = SqlAlchemyAccountRepository(session)
     orgs_repo = SqlAlchemyOrganizationRepository(session)
+    subscriptions_repo = SqlAlchemySubscriptionRepository(session)
 
     user = await users_repo.get_by_id(claims.user_id)
     if user is None or user.deleted_at is not None:
@@ -85,8 +88,22 @@ async def get_current_user(
             detail={"error": {"code": "INVALID_TOKEN", "message": "Account not found."}},
         )
     orgs = await orgs_repo.list_active_for_account(account.id)
+    subscription = await subscriptions_repo.get_by_account_id(account.id)
+    if subscription is None:
+        # Backfill migration 0004 guarantees this exists for pre-Fase-8 accounts,
+        # and register_account.py creates it for new accounts. Missing row means
+        # the DB is in an inconsistent state that should not silently succeed.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": {
+                    "code": "SUBSCRIPTION_MISSING",
+                    "message": "Account has no subscription row.",
+                }
+            },
+        )
 
-    return AuthContext(user=user, account=account, organizations=orgs)
+    return AuthContext(user=user, account=account, organizations=orgs, subscription=subscription)
 
 
 @dataclass(frozen=True)
