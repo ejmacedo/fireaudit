@@ -12,7 +12,9 @@ from app.domain.entities import (
     Organization,
     RefreshToken,
     Snapshot,
+    Subscription,
     User,
+    WebhookEvent,
 )
 from app.infrastructure import models
 
@@ -463,6 +465,93 @@ class SqlAlchemyFindingRepository:
         await self._session.flush()
         await self._session.refresh(row)
         return _finding_from_orm(row)
+
+
+def _subscription_from_orm(row: models.Subscription) -> Subscription:
+    return Subscription(
+        id=row.id,
+        account_id=row.account_id,
+        tier=row.tier,
+        status=row.status,
+        stripe_customer_id=row.stripe_customer_id,
+        stripe_subscription_id=row.stripe_subscription_id,
+        current_period_end=row.current_period_end,
+    )
+
+
+class SqlAlchemySubscriptionRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, subscription: Subscription) -> Subscription:
+        row = models.Subscription(
+            id=subscription.id,
+            account_id=subscription.account_id,
+            tier=subscription.tier,
+            status=subscription.status,
+            stripe_customer_id=subscription.stripe_customer_id,
+            stripe_subscription_id=subscription.stripe_subscription_id,
+            current_period_end=subscription.current_period_end,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _subscription_from_orm(row)
+
+    async def get_by_account_id(self, account_id: uuid.UUID) -> Subscription | None:
+        stmt = select(models.Subscription).where(models.Subscription.account_id == account_id)
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _subscription_from_orm(row) if row else None
+
+    async def update_from_stripe_event(
+        self,
+        account_id: uuid.UUID,
+        *,
+        tier: str,
+        status: str,
+        stripe_customer_id: str | None = None,
+        stripe_subscription_id: str | None = None,
+        current_period_end: datetime | None = None,
+    ) -> Subscription:
+        stmt = select(models.Subscription).where(models.Subscription.account_id == account_id)
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row is None:
+            raise ValueError(f"Subscription for account {account_id} not found")
+        row.tier = tier
+        row.status = status
+        if stripe_customer_id is not None:
+            row.stripe_customer_id = stripe_customer_id
+        if stripe_subscription_id is not None:
+            row.stripe_subscription_id = stripe_subscription_id
+        if current_period_end is not None:
+            row.current_period_end = current_period_end
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _subscription_from_orm(row)
+
+
+class SqlAlchemyWebhookEventRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def exists(self, event_id: str) -> bool:
+        stmt = select(models.WebhookEvent.id).where(models.WebhookEvent.event_id == event_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
+    async def create(self, event_id: str, event_type: str) -> WebhookEvent:
+        row = models.WebhookEvent(event_id=event_id, event_type=event_type)
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return WebhookEvent(
+            id=row.id,
+            event_id=row.event_id,
+            event_type=row.event_type,
+            processed_at=row.processed_at,
+        )
 
 
 class SqlAlchemyUnitOfWork:

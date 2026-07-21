@@ -52,3 +52,15 @@ class AgentTokenRevokedError(DomainError):
 
 class InvalidHMACSignatureError(DomainError):
     """X-Signature header does not match the expected HMAC-SHA256 of the body."""
+
+
+class SubscriptionNotFoundError(DomainError):
+    """Subscription row not found for the given account."""
+
+
+class AlreadySubscribedError(DomainError):
+    """Account is already on a paid tier — no checkout session should be created."""
+
+
+class InvalidWebhookSignatureError(DomainError):
+    """Stripe-Signature header did not verify against the configured webhook secret."""

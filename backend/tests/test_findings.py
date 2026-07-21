@@ -3,6 +3,7 @@
 import uuid
 
 from httpx import AsyncClient
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure import models
@@ -12,7 +13,14 @@ def _unique_email(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}@example.com"
 
 
-async def _register_and_login(client: AsyncClient, prefix: str = "user") -> str:
+async def _register_and_login(
+    client: AsyncClient,
+    prefix: str = "user",
+    db_session: AsyncSession | None = None,
+) -> str:
+    """Register + login. If db_session is provided, also promotes to tier=pro so the
+    account can access /findings /rules /vpn-tunnels — those routes were gated in
+    Fase 8. Tier-gating behavior itself is covered by test_tier_guard.py."""
     email = _unique_email(prefix)
     r = await client.post(
         "/v1/auth/register",
@@ -24,6 +32,14 @@ async def _register_and_login(client: AsyncClient, prefix: str = "user") -> str:
         },
     )
     assert r.status_code == 201
+    account_id = r.json()["account_id"]
+    if db_session is not None:
+        await db_session.execute(
+            update(models.Subscription)
+            .where(models.Subscription.account_id == uuid.UUID(account_id))
+            .values(tier="pro")
+        )
+        await db_session.commit()
     r = await client.post(
         "/v1/auth/login",
         json={"email": email, "password": "supersecret123"},
@@ -80,8 +96,8 @@ async def _insert_finding(
     return str(finding.id)
 
 
-async def test_list_findings_empty_when_no_findings(client: AsyncClient):
-    token = await _register_and_login(client)
+async def test_list_findings_empty_when_no_findings(client: AsyncClient, db_session: AsyncSession):
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id = await _create_firewall(client, headers)
 
@@ -93,7 +109,7 @@ async def test_list_findings_empty_when_no_findings(client: AsyncClient):
 async def test_list_findings_returns_created_findings(
     client: AsyncClient, db_session: AsyncSession
 ):
-    token = await _register_and_login(client)
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id = await _create_firewall(client, headers)
 
@@ -113,7 +129,7 @@ async def test_list_findings_returns_created_findings(
 async def test_resolve_finding_sets_status_and_resolved_at(
     client: AsyncClient, db_session: AsyncSession
 ):
-    token = await _register_and_login(client)
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id = await _create_firewall(client, headers)
 
@@ -134,7 +150,10 @@ async def test_resolve_finding_sets_status_and_resolved_at(
 async def test_open_findings_by_severity_reflected_on_firewall_list(
     client: AsyncClient, db_session: AsyncSession
 ):
-    token = await _register_and_login(client)
+    # Note: /v1/firewalls itself is NOT tier-gated (severity counts are visible to
+    # Free users so the upgrade teaser can show them). Still promote to pro here
+    # so this test focuses only on the counting logic, not tier gating.
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id = await _create_firewall(client, headers)
 
@@ -173,8 +192,10 @@ async def test_open_findings_by_severity_reflected_on_firewall_list(
     }
 
 
-async def test_rules_and_vpn_tunnels_empty_without_snapshot(client: AsyncClient):
-    token = await _register_and_login(client)
+async def test_rules_and_vpn_tunnels_empty_without_snapshot(
+    client: AsyncClient, db_session: AsyncSession
+):
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id = await _create_firewall(client, headers)
 
@@ -190,7 +211,7 @@ async def test_rules_and_vpn_tunnels_empty_without_snapshot(client: AsyncClient)
 async def test_rules_and_vpn_tunnels_use_latest_snapshot(
     client: AsyncClient, db_session: AsyncSession
 ):
-    token = await _register_and_login(client)
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id = await _create_firewall(client, headers)
 
@@ -217,8 +238,8 @@ async def test_rules_and_vpn_tunnels_use_latest_snapshot(
 async def test_cross_tenant_findings_rules_vpn_blocked(
     client: AsyncClient, db_session: AsyncSession
 ):
-    token_a = await _register_and_login(client, "user-a")
-    token_b = await _register_and_login(client, "user-b")
+    token_a = await _register_and_login(client, "user-a", db_session=db_session)
+    token_b = await _register_and_login(client, "user-b", db_session=db_session)
 
     fw_id = await _create_firewall(client, await _auth(token_a), "pf-a")
     snapshot_id = await _insert_snapshot(db_session, fw_id, raw_payload={"rules": [{"id": "x"}]})
@@ -246,7 +267,7 @@ async def test_cross_tenant_findings_rules_vpn_blocked(
 async def test_resolve_finding_not_belonging_to_firewall_returns_404(
     client: AsyncClient, db_session: AsyncSession
 ):
-    token = await _register_and_login(client)
+    token = await _register_and_login(client, db_session=db_session)
     headers = await _auth(token)
     fw_id_1 = await _create_firewall(client, headers, "pf-1")
     fw_id_2 = await _create_firewall(client, headers, "pf-2")

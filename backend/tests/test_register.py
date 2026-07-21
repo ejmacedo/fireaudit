@@ -35,6 +35,14 @@ async def test_register_individual_creates_account_user_and_organization(
     assert user.password_hash != "supersecret123"
     assert user.password_hash.startswith("$argon2")
 
+    subscription = (
+        await db_session.execute(
+            select(models.Subscription).where(models.Subscription.account_id == user.account_id)
+        )
+    ).scalar_one()
+    assert subscription.tier == "free"
+    assert subscription.status == "active"
+
 
 async def test_register_multiempresa_creates_account_and_user_only(
     client: AsyncClient, db_session: AsyncSession
@@ -60,6 +68,14 @@ async def test_register_multiempresa_creates_account_and_user_only(
         )
     ).scalar_one()
     assert account.account_type == "multiempresa"
+
+    subscription = (
+        await db_session.execute(
+            select(models.Subscription).where(models.Subscription.account_id == account.id)
+        )
+    ).scalar_one()
+    assert subscription.tier == "free"
+    assert subscription.status == "active"
 
 
 async def test_register_duplicate_email_returns_409(client: AsyncClient):
