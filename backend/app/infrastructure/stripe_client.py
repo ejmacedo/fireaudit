@@ -8,7 +8,7 @@ import uuid
 
 import stripe
 
-from app.application.protocols import CheckoutSession, ParsedWebhookEvent
+from app.application.protocols import BillingPortalSession, CheckoutSession, ParsedWebhookEvent
 from app.domain.errors import InvalidWebhookSignatureError
 
 
@@ -60,3 +60,15 @@ class StripePaymentGateway:
             event_type=event_dict["type"],
             data=event_dict.get("data", {}),
         )
+
+    def create_billing_portal_session(
+        self,
+        *,
+        customer_id: str,
+        return_url: str,
+    ) -> BillingPortalSession:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+        return BillingPortalSession(url=session.url)

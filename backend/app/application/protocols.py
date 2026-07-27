@@ -163,6 +163,11 @@ class ParsedWebhookEvent:
     data: dict
 
 
+@dataclass(frozen=True)
+class BillingPortalSession:
+    url: str
+
+
 class PaymentGateway(Protocol):
     def create_checkout_session(
         self,
@@ -174,3 +179,10 @@ class PaymentGateway(Protocol):
     ) -> CheckoutSession: ...
 
     def verify_webhook_signature(self, body: bytes, signature: str) -> ParsedWebhookEvent: ...
+
+    def create_billing_portal_session(
+        self,
+        *,
+        customer_id: str,
+        return_url: str,
+    ) -> BillingPortalSession: ...

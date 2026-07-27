@@ -31,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listFirewalls, createFirewall, type Firewall } from "@/lib/api/firewalls";
-import { getSubscription } from "@/lib/api/subscription";
+import { getSubscription, createBillingPortalSession } from "@/lib/api/subscription";
 import { SEVERITY_ORDER, severityRank, type Severity } from "@/lib/severity";
 import { statusDotColor, statusLabel, formatLastSeen } from "@/lib/firewall-status";
 import { UpgradeTeaser } from "@/components/upgrade-teaser";
@@ -86,6 +86,18 @@ export default function DashboardPage() {
   const [newFirewallName, setNewFirewallName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  async function handleManageSubscription() {
+    setIsOpeningPortal(true);
+    try {
+      const { url } = await createBillingPortalSession();
+      window.location.href = url;
+    } catch {
+      toast.error("Could not open the billing portal. Please try again.");
+      setIsOpeningPortal(false);
+    }
+  }
 
   const firewalls = useMemo(() => data?.firewalls ?? [], [data]);
   const sortedFirewalls = useMemo(() => sortFirewalls(firewalls), [firewalls]);
@@ -138,7 +150,18 @@ export default function DashboardPage() {
               : "Continuous compliance overview"}
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>+ Add firewall</Button>
+        <div className="flex items-center gap-2">
+          {subscription?.tier === "pro" && (
+            <Button
+              variant="outline"
+              onClick={handleManageSubscription}
+              disabled={isOpeningPortal}
+            >
+              {isOpeningPortal ? "Opening..." : "Manage subscription"}
+            </Button>
+          )}
+          <Button onClick={() => setDialogOpen(true)}>+ Add firewall</Button>
+        </div>
       </div>
 
       {subscription?.tier === "free" && (

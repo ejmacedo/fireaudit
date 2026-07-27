@@ -8,7 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
-from app.application.protocols import CheckoutSession, ParsedWebhookEvent
+from app.application.protocols import BillingPortalSession, CheckoutSession, ParsedWebhookEvent
 from app.domain.errors import InvalidWebhookSignatureError
 from app.infrastructure import models
 
@@ -234,6 +234,52 @@ async def test_webhook_idempotent_on_duplicate_event_id(
     ).scalar_one()
     # Second call was deduped by webhook_events row, so tier stays as we manually set (free)
     assert sub.tier == "free"
+
+
+async def test_billing_portal_session_conflict_when_no_stripe_customer(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch
+):
+    """Free accounts (or Pro accounts somehow missing stripe_customer_id) have
+    nothing to manage in the portal yet — 409, not a Stripe API error."""
+    token, _account_id = await _register_and_login(client, "portal-none")
+    fake_gateway = MagicMock()
+    monkeypatch.setattr(deps, "get_payment_gateway", lambda: fake_gateway)
+
+    r = await client.post(
+        "/v1/subscription/billing-portal-session",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "NO_STRIPE_CUSTOMER"
+    fake_gateway.create_billing_portal_session.assert_not_called()
+
+
+async def test_billing_portal_session_returns_gateway_url_for_pro_customer(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch
+):
+    token, account_id = await _register_and_login(client, "portal-pro")
+    await db_session.execute(
+        update(models.Subscription)
+        .where(models.Subscription.account_id == uuid.UUID(account_id))
+        .values(tier="pro", stripe_customer_id="cus_portal_test")
+    )
+    await db_session.commit()
+
+    fake_gateway = MagicMock()
+    fake_gateway.create_billing_portal_session.return_value = BillingPortalSession(
+        url="https://billing.stripe.com/test_portal"
+    )
+    monkeypatch.setattr(deps, "get_payment_gateway", lambda: fake_gateway)
+
+    r = await client.post(
+        "/v1/subscription/billing-portal-session",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["url"] == "https://billing.stripe.com/test_portal"
+    fake_gateway.create_billing_portal_session.assert_called_once()
+    _, kwargs = fake_gateway.create_billing_portal_session.call_args
+    assert kwargs["customer_id"] == "cus_portal_test"
 
 
 async def test_webhook_subscription_deleted_downgrades_to_free(

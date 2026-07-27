@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     stripe_price_id_pro: str = ""
     stripe_success_url: str = "http://localhost:3000/dashboard?checkout=success"
     stripe_cancel_url: str = "http://localhost:3000/dashboard?checkout=cancel"
+    stripe_portal_return_url: str = "http://localhost:3000/dashboard"
 
     # KMS
     kms_provider: str = "local"

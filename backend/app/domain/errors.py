@@ -66,5 +66,9 @@ class InvalidWebhookSignatureError(DomainError):
     """Stripe-Signature header did not verify against the configured webhook secret."""
 
 
+class NoStripeCustomerError(DomainError):
+    """Account has no stripe_customer_id yet — it never completed a checkout."""
+
+
 class InvalidOrExpiredResetTokenError(DomainError):
     """Password reset token is not recognized, already used, or expired."""

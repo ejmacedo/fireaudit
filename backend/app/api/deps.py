@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps_auth import AuthContext, get_current_user
 from app.application.protocols import EmailSender, PaymentGateway
+from app.application.use_cases.create_billing_portal_session import (
+    CreateBillingPortalSession,
+)
 from app.application.use_cases.create_checkout_session import CreateCheckoutSession
 from app.application.use_cases.create_firewall import CreateFirewall
 from app.application.use_cases.delete_firewall import DeleteFirewall
@@ -244,6 +247,15 @@ def get_create_checkout_session(
     session: AsyncSession = Depends(get_db),
 ) -> CreateCheckoutSession:
     return CreateCheckoutSession(
+        subscriptions=SqlAlchemySubscriptionRepository(session),
+        gateway=get_payment_gateway(),
+    )
+
+
+def get_create_billing_portal_session(
+    session: AsyncSession = Depends(get_db),
+) -> CreateBillingPortalSession:
+    return CreateBillingPortalSession(
         subscriptions=SqlAlchemySubscriptionRepository(session),
         gateway=get_payment_gateway(),
     )
