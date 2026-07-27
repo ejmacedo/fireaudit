@@ -1,3 +1,5 @@
+import logging
+
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
@@ -9,6 +11,11 @@ from slowapi.util import get_remote_address
 
 from app.api.routers import auth, firewalls, health, ingest, me, subscription
 from app.core.config import settings
+
+# Without this, app-level `logging.getLogger(__name__).info(...)` calls (e.g.
+# LoggingEmailSender, used whenever SMTP isn't configured) are silently dropped —
+# the root logger defaults to WARNING, and nothing else in this module configures it.
+logging.basicConfig(level=logging.INFO)
 
 if settings.sentry_dsn:
     sentry_sdk.init(

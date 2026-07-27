@@ -43,6 +43,7 @@ def _reset_login_rate_limiter() -> None:
         from app.api.routers import auth as auth_router
 
         auth_router._login_attempts.clear()
+        auth_router._forgot_password_attempts.clear()
     except Exception:
         pass
 

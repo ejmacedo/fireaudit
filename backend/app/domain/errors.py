@@ -64,3 +64,7 @@ class AlreadySubscribedError(DomainError):
 
 class InvalidWebhookSignatureError(DomainError):
     """Stripe-Signature header did not verify against the configured webhook secret."""
+
+
+class InvalidOrExpiredResetTokenError(DomainError):
+    """Password reset token is not recognized, already used, or expired."""
