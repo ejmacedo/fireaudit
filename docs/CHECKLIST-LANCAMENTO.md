@@ -66,11 +66,10 @@ tiver dependência de outro, a ordem já reflete isso.
   normalmente mantêm o preço antigo, o que exige atenção extra no Stripe).
 - [ ] **Política de cancelamento**: imediato ou até o fim do ciclo pago? Isso é configurado no
   próprio Customer Portal (item 1 acima), mas é uma decisão de negócio, não técnica.
-- [ ] **Baseline do `config_drift`** (6ª checagem do motor de análise, adiada desde a Fase 8) —
-  decisão pendente de produto: o que conta como "configuração de referência" para detectar
-  drift (snapshot anterior mais recente? um snapshot marcado manualmente como baseline?).
-  Enquanto isso não for decidido, o produto continua com 5 das 6 checagens do motor de
-  análise ativas — não é bloqueador de lançamento, mas é uma lacuna de feature conhecida.
+- [x] **Baseline do `config_drift`** (6ª checagem do motor de análise) — resolvido: a
+  referência usada é o snapshot anterior mais recente (`processing_status == "done"`) do
+  mesmo firewall, comparando as seções `rules`, `interfaces`, `certificates`, `vpn` e
+  `system`. As 6 checagens do motor de análise estão ativas.
 
 ---
 
