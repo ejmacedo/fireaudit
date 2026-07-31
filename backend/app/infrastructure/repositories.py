@@ -364,6 +364,23 @@ class SqlAlchemySnapshotRepository:
         row = result.scalar_one_or_none()
         return _snapshot_from_orm(row) if row else None
 
+    async def get_previous_for_firewall(
+        self, firewall_id: uuid.UUID, before_id: uuid.UUID
+    ) -> Snapshot | None:
+        stmt = (
+            select(models.Snapshot)
+            .where(
+                models.Snapshot.firewall_id == firewall_id,
+                models.Snapshot.id != before_id,
+                models.Snapshot.processing_status == "done",
+            )
+            .order_by(models.Snapshot.received_at.desc())
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _snapshot_from_orm(row) if row else None
+
 
 def _finding_from_orm(row: models.Finding) -> Finding:
     return Finding(

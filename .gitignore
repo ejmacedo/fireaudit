@@ -34,3 +34,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# graphify — grafo de conhecimento local, gerado a partir do codigo
+graphify-out/

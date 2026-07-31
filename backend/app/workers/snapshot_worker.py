@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.application.checks.agent_offline import AgentOfflineCheck
+from app.application.checks.config_drift import ConfigDriftCheck
 from app.application.checks.duplicate_rule import DuplicateRuleCheck
 from app.application.checks.expiring_cert import ExpiringCertCheck
 from app.application.checks.known_cve import KnownCveCheck
@@ -45,6 +46,7 @@ def _build_analyze_snapshot(session: AsyncSession) -> AnalyzeSnapshot:
         ExpiringCertCheck(threshold_days=settings.expiring_cert_threshold_days),
         KnownCveCheck(known_cves=_load_known_cves()),
         DuplicateRuleCheck(),
+        ConfigDriftCheck(),
     ]
     return AnalyzeSnapshot(
         checks=checks,
@@ -65,8 +67,15 @@ async def _process_batch(session: AsyncSession) -> int:
 
         firewall = await firewall_repo.get_by_id(snapshot.firewall_id)
         if firewall is not None:
+            previous_snapshot = await snapshot_repo.get_previous_for_firewall(
+                snapshot.firewall_id, before_id=snapshot.id
+            )
             await analyze_snapshot.execute(
-                AnalyzeSnapshotRequest(firewall=firewall, snapshot=snapshot)
+                AnalyzeSnapshotRequest(
+                    firewall=firewall,
+                    snapshot=snapshot,
+                    previous_snapshot=previous_snapshot,
+                )
             )
 
         await snapshot_repo.update_status(snapshot.id, "done")

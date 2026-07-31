@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.application.protocols import AnalysisCheck, FindingRepository, UnitOfWork
 from app.domain.entities import Firewall, Snapshot
@@ -8,6 +8,7 @@ from app.domain.entities import Firewall, Snapshot
 class AnalyzeSnapshotRequest:
     firewall: Firewall
     snapshot: Snapshot
+    previous_snapshot: Snapshot | None = field(default=None)
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,9 @@ class AnalyzeSnapshot:
             if existing is not None:
                 continue
 
-            for finding in check.run(request.firewall, request.snapshot):
+            for finding in check.run(
+                request.firewall, request.snapshot, previous_snapshot=request.previous_snapshot
+            ):
                 await self._findings.create(finding)
                 created += 1
 
