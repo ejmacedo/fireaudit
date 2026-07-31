@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     stripe_price_id_pro: str = ""
     stripe_success_url: str = "http://localhost:3000/dashboard?checkout=success"
     stripe_cancel_url: str = "http://localhost:3000/dashboard?checkout=cancel"
+    stripe_portal_return_url: str = "http://localhost:3000/dashboard"
 
     # KMS
     kms_provider: str = "local"
@@ -28,6 +29,15 @@ class Settings(BaseSettings):
 
     # Sentry
     sentry_dsn: str = ""
+
+    # SMTP / password reset
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "noreply@fireaudit.dev"
+    password_reset_token_ttl_minutes: int = 30
+    password_reset_url_base: str = "http://localhost:3000/reset-password"
 
     # Analysis engine
     agent_offline_threshold_minutes: int = 30

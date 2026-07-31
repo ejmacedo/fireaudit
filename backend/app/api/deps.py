@@ -2,7 +2,10 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps_auth import AuthContext, get_current_user
-from app.application.protocols import PaymentGateway
+from app.application.protocols import EmailSender, PaymentGateway
+from app.application.use_cases.create_billing_portal_session import (
+    CreateBillingPortalSession,
+)
 from app.application.use_cases.create_checkout_session import CreateCheckoutSession
 from app.application.use_cases.create_firewall import CreateFirewall
 from app.application.use_cases.delete_firewall import DeleteFirewall
@@ -22,16 +25,20 @@ from app.application.use_cases.register_account import (
     RegisterMultiempresaAccount,
 )
 from app.application.use_cases.rename_firewall import RenameFirewall
+from app.application.use_cases.request_password_reset import RequestPasswordReset
+from app.application.use_cases.reset_password import ResetPassword
 from app.application.use_cases.resolve_finding import ResolveFinding
 from app.application.use_cases.rotate_token import RotateToken
 from app.core.config import settings
 from app.infrastructure.database import get_db
+from app.infrastructure.email_client import LoggingEmailSender, SmtpEmailSender
 from app.infrastructure.repositories import (
     SqlAlchemyAccountRepository,
     SqlAlchemyAgentTokenRepository,
     SqlAlchemyFindingRepository,
     SqlAlchemyFirewallRepository,
     SqlAlchemyOrganizationRepository,
+    SqlAlchemyPasswordResetTokenRepository,
     SqlAlchemyRefreshTokenRepository,
     SqlAlchemySnapshotRepository,
     SqlAlchemySubscriptionRepository,
@@ -98,6 +105,43 @@ def get_refresh_session(session: AsyncSession = Depends(get_db)) -> RefreshSessi
 def get_logout_user(session: AsyncSession = Depends(get_db)) -> LogoutUser:
     return LogoutUser(
         refresh_tokens=SqlAlchemyRefreshTokenRepository(session),
+        tokens=build_token_service(),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_email_sender() -> EmailSender:
+    if settings.smtp_host:
+        return SmtpEmailSender(
+            host=settings.smtp_host,
+            port=settings.smtp_port,
+            username=settings.smtp_user,
+            password=settings.smtp_password,
+            from_email=settings.smtp_from_email,
+        )
+    return LoggingEmailSender()
+
+
+def get_request_password_reset(
+    session: AsyncSession = Depends(get_db),
+) -> RequestPasswordReset:
+    return RequestPasswordReset(
+        users=SqlAlchemyUserRepository(session),
+        reset_tokens=SqlAlchemyPasswordResetTokenRepository(session),
+        email_sender=get_email_sender(),
+        tokens=build_token_service(),
+        uow=SqlAlchemyUnitOfWork(session),
+        token_ttl_minutes=settings.password_reset_token_ttl_minutes,
+        reset_url_base=settings.password_reset_url_base,
+    )
+
+
+def get_reset_password(session: AsyncSession = Depends(get_db)) -> ResetPassword:
+    return ResetPassword(
+        users=SqlAlchemyUserRepository(session),
+        reset_tokens=SqlAlchemyPasswordResetTokenRepository(session),
+        refresh_tokens=SqlAlchemyRefreshTokenRepository(session),
+        hasher=Argon2PasswordHasher(),
         tokens=build_token_service(),
         uow=SqlAlchemyUnitOfWork(session),
     )
@@ -203,6 +247,15 @@ def get_create_checkout_session(
     session: AsyncSession = Depends(get_db),
 ) -> CreateCheckoutSession:
     return CreateCheckoutSession(
+        subscriptions=SqlAlchemySubscriptionRepository(session),
+        gateway=get_payment_gateway(),
+    )
+
+
+def get_create_billing_portal_session(
+    session: AsyncSession = Depends(get_db),
+) -> CreateBillingPortalSession:
+    return CreateBillingPortalSession(
         subscriptions=SqlAlchemySubscriptionRepository(session),
         gateway=get_payment_gateway(),
     )

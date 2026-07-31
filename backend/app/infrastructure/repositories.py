@@ -10,6 +10,7 @@ from app.domain.entities import (
     Finding,
     Firewall,
     Organization,
+    PasswordResetToken,
     RefreshToken,
     Snapshot,
     Subscription,
@@ -26,6 +27,17 @@ def _refresh_token_from_orm(row: models.RefreshToken) -> RefreshToken:
         token_hash=row.token_hash,
         expires_at=row.expires_at,
         revoked_at=row.revoked_at,
+        created_at=row.created_at,
+    )
+
+
+def _password_reset_token_from_orm(row: models.PasswordResetToken) -> PasswordResetToken:
+    return PasswordResetToken(
+        id=row.id,
+        user_id=row.user_id,
+        token_hash=row.token_hash,
+        expires_at=row.expires_at,
+        used_at=row.used_at,
         created_at=row.created_at,
     )
 
@@ -148,6 +160,12 @@ class SqlAlchemyUserRepository:
         row = await self._session.get(models.User, user_id)
         return _user_from_orm(row) if row else None
 
+    async def update_password_hash(self, user_id: uuid.UUID, password_hash: str) -> None:
+        stmt = (
+            update(models.User).where(models.User.id == user_id).values(password_hash=password_hash)
+        )
+        await self._session.execute(stmt)
+
 
 class SqlAlchemyRefreshTokenRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -177,6 +195,49 @@ class SqlAlchemyRefreshTokenRepository:
             update(models.RefreshToken)
             .where(models.RefreshToken.id == token_id)
             .values(revoked_at=datetime.now(UTC))
+        )
+        await self._session.execute(stmt)
+
+    async def revoke_all_for_user(self, user_id: uuid.UUID) -> None:
+        stmt = (
+            update(models.RefreshToken)
+            .where(models.RefreshToken.user_id == user_id)
+            .where(models.RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=datetime.now(UTC))
+        )
+        await self._session.execute(stmt)
+
+
+class SqlAlchemyPasswordResetTokenRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, token: PasswordResetToken) -> PasswordResetToken:
+        row = models.PasswordResetToken(
+            id=token.id,
+            user_id=token.user_id,
+            token_hash=token.token_hash,
+            expires_at=token.expires_at,
+            used_at=token.used_at,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _password_reset_token_from_orm(row)
+
+    async def get_by_token_hash(self, token_hash: str) -> PasswordResetToken | None:
+        stmt = select(models.PasswordResetToken).where(
+            models.PasswordResetToken.token_hash == token_hash
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _password_reset_token_from_orm(row) if row else None
+
+    async def mark_used(self, token_id: uuid.UUID) -> None:
+        stmt = (
+            update(models.PasswordResetToken)
+            .where(models.PasswordResetToken.id == token_id)
+            .values(used_at=datetime.now(UTC))
         )
         await self._session.execute(stmt)
 

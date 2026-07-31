@@ -4,13 +4,22 @@ from fastapi import APIRouter, Depends, Header, Request, status
 from fastapi.responses import JSONResponse
 
 from app.api.deps import (
+    get_create_billing_portal_session,
     get_create_checkout_session,
     get_process_stripe_webhook,
     get_subscription_uc,
 )
 from app.api.deps_auth import AuthContext, get_current_user
 from app.api.errors import error_response
-from app.api.schemas.subscription import CheckoutSessionResponse, SubscriptionResponse
+from app.api.schemas.subscription import (
+    BillingPortalSessionResponse,
+    CheckoutSessionResponse,
+    SubscriptionResponse,
+)
+from app.application.use_cases.create_billing_portal_session import (
+    CreateBillingPortalSession,
+    CreateBillingPortalSessionRequest,
+)
 from app.application.use_cases.create_checkout_session import (
     CreateCheckoutSession,
     CreateCheckoutSessionRequest,
@@ -27,6 +36,7 @@ from app.core.config import settings
 from app.domain.errors import (
     AlreadySubscribedError,
     InvalidWebhookSignatureError,
+    NoStripeCustomerError,
     SubscriptionNotFoundError,
 )
 
@@ -88,6 +98,38 @@ async def create_checkout_session(
             message="Account is already on a paid tier.",
         )
     return CheckoutSessionResponse(url=result.url)
+
+
+@router.post(
+    "/subscription/billing-portal-session",
+    status_code=status.HTTP_200_OK,
+    response_model=BillingPortalSessionResponse,
+)
+async def create_billing_portal_session(
+    ctx: AuthContext = Depends(get_current_user),
+    use_case: CreateBillingPortalSession = Depends(get_create_billing_portal_session),
+) -> BillingPortalSessionResponse | JSONResponse:
+    try:
+        result = await use_case.execute(
+            CreateBillingPortalSessionRequest(
+                account_id=ctx.account.id,
+                return_url=settings.stripe_portal_return_url,
+            )
+        )
+    except SubscriptionNotFoundError:
+        return error_response(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="SUBSCRIPTION_NOT_FOUND",
+            message="Subscription not found.",
+        )
+    except NoStripeCustomerError:
+        return error_response(
+            status_code=status.HTTP_409_CONFLICT,
+            code="NO_STRIPE_CUSTOMER",
+            message="This account has never completed a checkout, so there is no billing "
+            "profile to manage yet.",
+        )
+    return BillingPortalSessionResponse(url=result.url)
 
 
 @router.post("/webhooks/stripe", status_code=status.HTTP_200_OK, response_model=None)

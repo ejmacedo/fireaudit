@@ -20,3 +20,11 @@ export async function login(payload: LoginPayload): Promise<TokenResponse> {
 export async function logout(refreshToken: string): Promise<void> {
   await apiClient.post("/v1/auth/logout", { refresh_token: refreshToken });
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  await apiClient.post("/v1/auth/forgot-password", { email });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await apiClient.post("/v1/auth/reset-password", { token, new_password: newPassword });
+}

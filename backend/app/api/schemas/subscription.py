@@ -11,3 +11,7 @@ class SubscriptionResponse(BaseModel):
 
 class CheckoutSessionResponse(BaseModel):
     url: str
+
+
+class BillingPortalSessionResponse(BaseModel):
+    url: str

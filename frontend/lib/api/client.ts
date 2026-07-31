@@ -34,12 +34,28 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+// Auth endpoints manage their own error handling (e.g. the login form shows
+// "Email or password is incorrect."). A 401 from these is never an expired
+// session, so it must never trigger the refresh-token/redirect-to-login flow
+// below — that flow does a full-page navigation, which would wipe out the
+// login form's own error message almost instantly.
+const AUTH_ENDPOINTS_EXCLUDED_FROM_REFRESH = ["/v1/auth/login", "/v1/auth/refresh"];
+
+function isExcludedFromRefreshFlow(url: string | undefined): boolean {
+  if (!url) return false;
+  return AUTH_ENDPOINTS_EXCLUDED_FROM_REFRESH.some((path) => url.includes(path));
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as
       | (InternalAxiosRequestConfig & { _retried?: boolean })
       | undefined;
+
+    if (isExcludedFromRefreshFlow(originalRequest?.url)) {
+      return Promise.reject(error);
+    }
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retried) {
       if (error.response?.status === 401) {

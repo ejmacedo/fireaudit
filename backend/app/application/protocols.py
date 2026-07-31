@@ -9,6 +9,7 @@ from app.domain.entities import (
     Finding,
     Firewall,
     Organization,
+    PasswordResetToken,
     RefreshToken,
     Snapshot,
     Subscription,
@@ -32,12 +33,20 @@ class UserRepository(Protocol):
     async def create(self, user: User) -> User: ...
     async def get_by_email(self, email: str) -> User | None: ...
     async def get_by_id(self, user_id: uuid.UUID) -> User | None: ...
+    async def update_password_hash(self, user_id: uuid.UUID, password_hash: str) -> None: ...
 
 
 class RefreshTokenRepository(Protocol):
     async def create(self, token: RefreshToken) -> RefreshToken: ...
     async def get_by_token_hash(self, token_hash: str) -> RefreshToken | None: ...
     async def revoke(self, token_id: uuid.UUID) -> None: ...
+    async def revoke_all_for_user(self, user_id: uuid.UUID) -> None: ...
+
+
+class PasswordResetTokenRepository(Protocol):
+    async def create(self, token: PasswordResetToken) -> PasswordResetToken: ...
+    async def get_by_token_hash(self, token_hash: str) -> PasswordResetToken | None: ...
+    async def mark_used(self, token_id: uuid.UUID) -> None: ...
 
 
 class PasswordHasher(Protocol):
@@ -46,6 +55,10 @@ class PasswordHasher(Protocol):
 
 class PasswordVerifier(Protocol):
     def verify(self, plain: str, hashed: str) -> bool: ...
+
+
+class EmailSender(Protocol):
+    async def send(self, *, to: str, subject: str, body_text: str) -> None: ...
 
 
 @dataclass(frozen=True)
@@ -153,6 +166,11 @@ class ParsedWebhookEvent:
     data: dict
 
 
+@dataclass(frozen=True)
+class BillingPortalSession:
+    url: str
+
+
 class PaymentGateway(Protocol):
     def create_checkout_session(
         self,
@@ -164,3 +182,10 @@ class PaymentGateway(Protocol):
     ) -> CheckoutSession: ...
 
     def verify_webhook_signature(self, body: bytes, signature: str) -> ParsedWebhookEvent: ...
+
+    def create_billing_portal_session(
+        self,
+        *,
+        customer_id: str,
+        return_url: str,
+    ) -> BillingPortalSession: ...

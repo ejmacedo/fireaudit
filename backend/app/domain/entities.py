@@ -38,6 +38,16 @@ class RefreshToken:
 
 
 @dataclass
+class PasswordResetToken:
+    user_id: uuid.UUID
+    token_hash: str
+    expires_at: datetime
+    id: uuid.UUID = field(default_factory=_new_id)
+    used_at: datetime | None = None
+    created_at: datetime | None = None
+
+
+@dataclass
 class User:
     account_id: uuid.UUID
     email: str
