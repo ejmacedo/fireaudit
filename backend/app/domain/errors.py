@@ -72,3 +72,19 @@ class NoStripeCustomerError(DomainError):
 
 class InvalidOrExpiredResetTokenError(DomainError):
     """Password reset token is not recognized, already used, or expired."""
+
+
+class AlertChannelNotFoundError(DomainError):
+    """Alert channel not found or does not belong to the given organization."""
+
+
+class InvalidAlertChannelTypeError(DomainError):
+    """The alert channel type is not one of the allowed values."""
+
+
+class AlertRuleNotFoundError(DomainError):
+    """Alert rule not found or does not belong to the given organization."""
+
+
+class InvalidAlertRuleOperatorError(DomainError):
+    """The alert rule operator is not one of the allowed values (gt, gte, lt, lte, eq)."""

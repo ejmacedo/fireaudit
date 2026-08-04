@@ -7,6 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.entities import (
     Account,
     AgentToken,
+    AlertChannel,
+    AlertDelivery,
+    AlertRule,
     Finding,
     Firewall,
     Organization,
@@ -630,6 +633,193 @@ class SqlAlchemyWebhookEventRepository:
             event_type=row.event_type,
             processed_at=row.processed_at,
         )
+
+
+def _alert_channel_from_orm(row: models.AlertChannel) -> AlertChannel:
+    return AlertChannel(
+        id=row.id,
+        organization_id=row.organization_id,
+        type=row.type,
+        config=row.config,
+        active=row.active,
+    )
+
+
+def _alert_rule_from_orm(row: models.AlertRule) -> AlertRule:
+    return AlertRule(
+        id=row.id,
+        organization_id=row.organization_id,
+        firewall_id=row.firewall_id,
+        metric=row.metric,
+        operator=row.operator,
+        threshold=float(row.threshold),
+        duration_minutes=row.duration_minutes,
+        alert_channel_id=row.alert_channel_id,
+        active=row.active,
+        created_by_user_id=row.created_by_user_id,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def _alert_delivery_from_orm(row: models.AlertDelivery) -> AlertDelivery:
+    return AlertDelivery(
+        id=row.id,
+        finding_id=row.finding_id,
+        alert_rule_id=row.alert_rule_id,
+        alert_channel_id=row.alert_channel_id,
+        status=row.status,
+        sent_at=row.sent_at,
+        error=row.error,
+    )
+
+
+class SqlAlchemyAlertChannelRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, channel: AlertChannel) -> AlertChannel:
+        row = models.AlertChannel(
+            id=channel.id,
+            organization_id=channel.organization_id,
+            type=channel.type,
+            config=channel.config,
+            active=channel.active,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _alert_channel_from_orm(row)
+
+    async def get_by_id(self, channel_id: uuid.UUID) -> AlertChannel | None:
+        row = await self._session.get(models.AlertChannel, channel_id)
+        return _alert_channel_from_orm(row) if row else None
+
+    async def list_active_for_org(self, organization_id: uuid.UUID) -> list[AlertChannel]:
+        stmt = select(models.AlertChannel).where(
+            models.AlertChannel.organization_id == organization_id,
+            models.AlertChannel.active.is_(True),
+        )
+        result = await self._session.execute(stmt)
+        return [_alert_channel_from_orm(row) for row in result.scalars().all()]
+
+    async def list_for_org(self, organization_id: uuid.UUID) -> list[AlertChannel]:
+        stmt = select(models.AlertChannel).where(
+            models.AlertChannel.organization_id == organization_id,
+        )
+        result = await self._session.execute(stmt)
+        return [_alert_channel_from_orm(row) for row in result.scalars().all()]
+
+    async def update(self, channel: AlertChannel) -> AlertChannel:
+        row = await self._session.get(models.AlertChannel, channel.id)
+        if row is None:
+            raise ValueError(f"AlertChannel {channel.id} not found")
+        row.type = channel.type
+        row.config = channel.config
+        row.active = channel.active
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _alert_channel_from_orm(row)
+
+    async def delete(self, channel_id: uuid.UUID) -> None:
+        row = await self._session.get(models.AlertChannel, channel_id)
+        if row is not None:
+            await self._session.delete(row)
+
+
+class SqlAlchemyAlertRuleRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, rule: AlertRule) -> AlertRule:
+        row = models.AlertRule(
+            id=rule.id,
+            organization_id=rule.organization_id,
+            firewall_id=rule.firewall_id,
+            metric=rule.metric,
+            operator=rule.operator,
+            threshold=rule.threshold,
+            duration_minutes=rule.duration_minutes,
+            alert_channel_id=rule.alert_channel_id,
+            active=rule.active,
+            created_by_user_id=rule.created_by_user_id,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _alert_rule_from_orm(row)
+
+    async def get_by_id(self, rule_id: uuid.UUID) -> AlertRule | None:
+        row = await self._session.get(models.AlertRule, rule_id)
+        return _alert_rule_from_orm(row) if row else None
+
+    async def list_for_org(self, organization_id: uuid.UUID) -> list[AlertRule]:
+        stmt = select(models.AlertRule).where(
+            models.AlertRule.organization_id == organization_id,
+        )
+        result = await self._session.execute(stmt)
+        return [_alert_rule_from_orm(row) for row in result.scalars().all()]
+
+    async def update(self, rule: AlertRule) -> AlertRule:
+        row = await self._session.get(models.AlertRule, rule.id)
+        if row is None:
+            raise ValueError(f"AlertRule {rule.id} not found")
+        row.metric = rule.metric
+        row.operator = rule.operator
+        row.threshold = rule.threshold
+        row.duration_minutes = rule.duration_minutes
+        row.alert_channel_id = rule.alert_channel_id
+        row.active = rule.active
+        row.updated_at = datetime.now(UTC)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _alert_rule_from_orm(row)
+
+    async def delete(self, rule_id: uuid.UUID) -> None:
+        row = await self._session.get(models.AlertRule, rule_id)
+        if row is not None:
+            await self._session.delete(row)
+
+
+class SqlAlchemyAlertDeliveryRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, delivery: AlertDelivery) -> AlertDelivery:
+        row = models.AlertDelivery(
+            id=delivery.id,
+            finding_id=delivery.finding_id,
+            alert_rule_id=delivery.alert_rule_id,
+            alert_channel_id=delivery.alert_channel_id,
+            status=delivery.status,
+            sent_at=delivery.sent_at,
+            error=delivery.error,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _alert_delivery_from_orm(row)
+
+    async def update_status(
+        self, delivery_id: uuid.UUID, *, status: str, error: str | None = None
+    ) -> AlertDelivery:
+        row = await self._session.get(models.AlertDelivery, delivery_id)
+        if row is None:
+            raise ValueError(f"AlertDelivery {delivery_id} not found")
+        row.status = status
+        row.error = error
+        if status == "sent":
+            row.sent_at = datetime.now(UTC)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _alert_delivery_from_orm(row)
+
+    async def list_for_finding(self, finding_id: uuid.UUID) -> list[AlertDelivery]:
+        stmt = select(models.AlertDelivery).where(
+            models.AlertDelivery.finding_id == finding_id,
+        )
+        result = await self._session.execute(stmt)
+        return [_alert_delivery_from_orm(row) for row in result.scalars().all()]
 
 
 class SqlAlchemyUnitOfWork:

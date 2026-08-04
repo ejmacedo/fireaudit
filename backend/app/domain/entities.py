@@ -122,3 +122,39 @@ class WebhookEvent:
     event_type: str
     id: uuid.UUID = field(default_factory=_new_id)
     processed_at: datetime | None = None
+
+
+@dataclass
+class AlertChannel:
+    organization_id: uuid.UUID
+    type: str
+    config: dict
+    id: uuid.UUID = field(default_factory=_new_id)
+    active: bool = True
+
+
+@dataclass
+class AlertRule:
+    organization_id: uuid.UUID
+    metric: str
+    operator: str
+    threshold: float
+    alert_channel_id: uuid.UUID
+    id: uuid.UUID = field(default_factory=_new_id)
+    firewall_id: uuid.UUID | None = None
+    duration_minutes: int = 0
+    active: bool = True
+    created_by_user_id: uuid.UUID | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+@dataclass
+class AlertDelivery:
+    alert_channel_id: uuid.UUID
+    id: uuid.UUID = field(default_factory=_new_id)
+    finding_id: uuid.UUID | None = None
+    alert_rule_id: uuid.UUID | None = None
+    status: str = "pending"
+    sent_at: datetime | None = None
+    error: str | None = None

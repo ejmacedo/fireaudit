@@ -15,7 +15,13 @@ from app.domain.entities import Finding, Firewall, Snapshot
 class DuplicateRuleCheck:
     check_type = "duplicate_rule"
 
-    def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]:
+    def run(
+        self,
+        firewall: Firewall,
+        snapshot: Snapshot,
+        *,
+        previous_snapshot: Snapshot | None = None,
+    ) -> list[Finding]:
         rules = snapshot.raw_payload.get("rules") or []
 
         groups: dict[tuple, list[dict]] = defaultdict(list)

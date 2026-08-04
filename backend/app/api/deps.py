@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps_auth import AuthContext, get_current_user
 from app.application.protocols import EmailSender, PaymentGateway
+from app.application.use_cases.create_alert_channel import CreateAlertChannel
+from app.application.use_cases.create_alert_rule import CreateAlertRule
 from app.application.use_cases.create_billing_portal_session import (
     CreateBillingPortalSession,
 )
@@ -14,6 +16,8 @@ from app.application.use_cases.get_firewall_rules import GetFirewallRules
 from app.application.use_cases.get_firewall_vpn_tunnels import GetFirewallVpnTunnels
 from app.application.use_cases.get_subscription import GetSubscription
 from app.application.use_cases.ingest_snapshot import IngestSnapshot
+from app.application.use_cases.list_alert_channels import ListAlertChannels
+from app.application.use_cases.list_alert_rules import ListAlertRules
 from app.application.use_cases.list_findings import ListFindings
 from app.application.use_cases.list_firewalls import ListFirewalls
 from app.application.use_cases.login_user import LoginUser
@@ -35,6 +39,8 @@ from app.infrastructure.email_client import LoggingEmailSender, SmtpEmailSender
 from app.infrastructure.repositories import (
     SqlAlchemyAccountRepository,
     SqlAlchemyAgentTokenRepository,
+    SqlAlchemyAlertChannelRepository,
+    SqlAlchemyAlertRuleRepository,
     SqlAlchemyFindingRepository,
     SqlAlchemyFirewallRepository,
     SqlAlchemyOrganizationRepository,
@@ -229,6 +235,29 @@ def get_get_firewall_vpn_tunnels(
         firewalls=SqlAlchemyFirewallRepository(session),
         snapshots=SqlAlchemySnapshotRepository(session),
     )
+
+
+def get_create_alert_channel(session: AsyncSession = Depends(get_db)) -> CreateAlertChannel:
+    return CreateAlertChannel(
+        alert_channels=SqlAlchemyAlertChannelRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_list_alert_channels(session: AsyncSession = Depends(get_db)) -> ListAlertChannels:
+    return ListAlertChannels(alert_channels=SqlAlchemyAlertChannelRepository(session))
+
+
+def get_create_alert_rule(session: AsyncSession = Depends(get_db)) -> CreateAlertRule:
+    return CreateAlertRule(
+        alert_rules=SqlAlchemyAlertRuleRepository(session),
+        alert_channels=SqlAlchemyAlertChannelRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_list_alert_rules(session: AsyncSession = Depends(get_db)) -> ListAlertRules:
+    return ListAlertRules(alert_rules=SqlAlchemyAlertRuleRepository(session))
 
 
 def get_payment_gateway() -> PaymentGateway:

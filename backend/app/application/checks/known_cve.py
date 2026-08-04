@@ -19,7 +19,13 @@ class KnownCveCheck:
     def __init__(self, known_cves: dict[str, list[dict]]) -> None:
         self._known_cves = known_cves
 
-    def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]:
+    def run(
+        self,
+        firewall: Firewall,
+        snapshot: Snapshot,
+        *,
+        previous_snapshot: Snapshot | None = None,
+    ) -> list[Finding]:
         version = snapshot.raw_payload.get("pfsense_version") or firewall.pfsense_version
         if not version:
             return []

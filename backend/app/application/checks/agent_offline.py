@@ -15,7 +15,13 @@ class AgentOfflineCheck:
     def __init__(self, threshold_minutes: int) -> None:
         self._threshold_minutes = threshold_minutes
 
-    def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]:
+    def run(
+        self,
+        firewall: Firewall,
+        snapshot: Snapshot,
+        *,
+        previous_snapshot: Snapshot | None = None,
+    ) -> list[Finding]:
         if firewall.last_seen_at is None:
             return []
 

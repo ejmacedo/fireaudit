@@ -15,8 +15,12 @@ from app.application.checks.expiring_cert import ExpiringCertCheck
 from app.application.checks.known_cve import KnownCveCheck
 from app.application.checks.risky_rule import RiskyRuleCheck
 from app.application.use_cases.analyze_snapshot import AnalyzeSnapshot, AnalyzeSnapshotRequest
+from app.application.use_cases.deliver_alerts import DeliverAlerts, DeliverAlertsRequest
 from app.core.config import settings
+from app.infrastructure.email_client import LoggingEmailSender, SmtpEmailSender
 from app.infrastructure.repositories import (
+    SqlAlchemyAlertChannelRepository,
+    SqlAlchemyAlertDeliveryRepository,
     SqlAlchemyFindingRepository,
     SqlAlchemyFirewallRepository,
     SqlAlchemySnapshotRepository,
@@ -39,6 +43,18 @@ def _load_known_cves() -> dict[str, list[dict]]:
     return {key: value for key, value in data.items() if not key.startswith("_")}
 
 
+def _build_email_sender() -> SmtpEmailSender | LoggingEmailSender:
+    if settings.smtp_host:
+        return SmtpEmailSender(
+            host=settings.smtp_host,
+            port=settings.smtp_port,
+            username=settings.smtp_user,
+            password=settings.smtp_password,
+            from_email=settings.smtp_from_email,
+        )
+    return LoggingEmailSender()
+
+
 def _build_analyze_snapshot(session: AsyncSession) -> AnalyzeSnapshot:
     checks = [
         AgentOfflineCheck(threshold_minutes=settings.agent_offline_threshold_minutes),
@@ -55,10 +71,20 @@ def _build_analyze_snapshot(session: AsyncSession) -> AnalyzeSnapshot:
     )
 
 
+def _build_deliver_alerts(session: AsyncSession) -> DeliverAlerts:
+    return DeliverAlerts(
+        alert_channels=SqlAlchemyAlertChannelRepository(session),
+        alert_deliveries=SqlAlchemyAlertDeliveryRepository(session),
+        email_sender=_build_email_sender(),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
 async def _process_batch(session: AsyncSession) -> int:
     snapshot_repo = SqlAlchemySnapshotRepository(session)
     firewall_repo = SqlAlchemyFirewallRepository(session)
     analyze_snapshot = _build_analyze_snapshot(session)
+    deliver_alerts = _build_deliver_alerts(session)
 
     snapshots = await snapshot_repo.list_queued(limit=_BATCH_SIZE)
     for snapshot in snapshots:
@@ -70,13 +96,17 @@ async def _process_batch(session: AsyncSession) -> int:
             previous_snapshot = await snapshot_repo.get_previous_for_firewall(
                 snapshot.firewall_id, before_id=snapshot.id
             )
-            await analyze_snapshot.execute(
+            result = await analyze_snapshot.execute(
                 AnalyzeSnapshotRequest(
                     firewall=firewall,
                     snapshot=snapshot,
                     previous_snapshot=previous_snapshot,
                 )
             )
+            if result.findings:
+                await deliver_alerts.execute(
+                    DeliverAlertsRequest(firewall=firewall, findings=result.findings)
+                )
 
         await snapshot_repo.update_status(snapshot.id, "done")
         await session.commit()

@@ -13,7 +13,13 @@ _ANY = "any"
 class RiskyRuleCheck:
     check_type = "risky_rule"
 
-    def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]:
+    def run(
+        self,
+        firewall: Firewall,
+        snapshot: Snapshot,
+        *,
+        previous_snapshot: Snapshot | None = None,
+    ) -> list[Finding]:
         findings: list[Finding] = []
         rules = snapshot.raw_payload.get("rules") or []
 

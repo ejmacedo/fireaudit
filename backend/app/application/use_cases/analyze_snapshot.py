@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from app.application.protocols import AnalysisCheck, FindingRepository, UnitOfWork
-from app.domain.entities import Firewall, Snapshot
+from app.domain.entities import Finding, Firewall, Snapshot
 
 
 @dataclass(frozen=True)
@@ -14,6 +14,7 @@ class AnalyzeSnapshotRequest:
 @dataclass(frozen=True)
 class AnalyzeSnapshotResult:
     findings_created: int
+    findings: list[Finding] = field(default_factory=list)
 
 
 class AnalyzeSnapshot:
@@ -34,7 +35,7 @@ class AnalyzeSnapshot:
         self._uow = uow
 
     async def execute(self, request: AnalyzeSnapshotRequest) -> AnalyzeSnapshotResult:
-        created = 0
+        created_findings: list[Finding] = []
         for check in self._checks:
             existing = await self._findings.get_open_by_check_type(
                 request.firewall.id, check.check_type
@@ -45,8 +46,9 @@ class AnalyzeSnapshot:
             for finding in check.run(
                 request.firewall, request.snapshot, previous_snapshot=request.previous_snapshot
             ):
-                await self._findings.create(finding)
-                created += 1
+                created_findings.append(await self._findings.create(finding))
 
         await self._uow.commit()
-        return AnalyzeSnapshotResult(findings_created=created)
+        return AnalyzeSnapshotResult(
+            findings_created=len(created_findings), findings=created_findings
+        )

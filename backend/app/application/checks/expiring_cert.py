@@ -15,7 +15,13 @@ class ExpiringCertCheck:
     def __init__(self, threshold_days: int) -> None:
         self._threshold_days = threshold_days
 
-    def run(self, firewall: Firewall, snapshot: Snapshot) -> list[Finding]:
+    def run(
+        self,
+        firewall: Firewall,
+        snapshot: Snapshot,
+        *,
+        previous_snapshot: Snapshot | None = None,
+    ) -> list[Finding]:
         findings: list[Finding] = []
         certificates = snapshot.raw_payload.get("certificates") or []
         now = datetime.now(UTC)
