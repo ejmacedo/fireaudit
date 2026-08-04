@@ -10,7 +10,7 @@ def error_response(
     message: str,
     details: Any | None = None,
 ) -> JSONResponse:
-    """Standardized error envelope per CLAUDE.md API conventions."""
+    """Standardized error envelope per docs/escopo/CLAUDE.md API conventions."""
     return JSONResponse(
         status_code=status_code,
         content={"error": {"code": code, "message": message, "details": details}},

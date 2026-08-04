@@ -1,6 +1,6 @@
 # FireAudit
 
-SaaS de auditoria e compliance contínua para firewalls pfSense. Ver `CLAUDE.md` para a
+SaaS de auditoria e compliance contínua para firewalls pfSense. Ver `docs/escopo/CLAUDE.md` para a
 arquitetura e as decisões de produto/negócio fechadas — este arquivo cobre apenas o
 básico de rodar o projeto localmente.
 
