@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps_auth import AuthContext, get_current_user
 from app.application.protocols import EmailSender, PaymentGateway
+from app.application.use_cases.confirm_firewall_command import ConfirmFirewallCommand
 from app.application.use_cases.create_alert_channel import CreateAlertChannel
 from app.application.use_cases.create_alert_rule import CreateAlertRule
 from app.application.use_cases.create_billing_portal_session import (
@@ -10,6 +11,7 @@ from app.application.use_cases.create_billing_portal_session import (
 )
 from app.application.use_cases.create_checkout_session import CreateCheckoutSession
 from app.application.use_cases.create_firewall import CreateFirewall
+from app.application.use_cases.create_firewall_command import CreateFirewallCommand
 from app.application.use_cases.delete_firewall import DeleteFirewall
 from app.application.use_cases.get_firewall import GetFirewall
 from app.application.use_cases.get_firewall_rules import GetFirewallRules
@@ -19,9 +21,11 @@ from app.application.use_cases.ingest_snapshot import IngestSnapshot
 from app.application.use_cases.list_alert_channels import ListAlertChannels
 from app.application.use_cases.list_alert_rules import ListAlertRules
 from app.application.use_cases.list_findings import ListFindings
+from app.application.use_cases.list_firewall_commands import ListFirewallCommands
 from app.application.use_cases.list_firewalls import ListFirewalls
 from app.application.use_cases.login_user import LoginUser
 from app.application.use_cases.logout_user import LogoutUser
+from app.application.use_cases.poll_firewall_commands import PollFirewallCommands
 from app.application.use_cases.process_stripe_webhook import ProcessStripeWebhook
 from app.application.use_cases.refresh_session import RefreshSession
 from app.application.use_cases.register_account import (
@@ -29,9 +33,13 @@ from app.application.use_cases.register_account import (
     RegisterMultiempresaAccount,
 )
 from app.application.use_cases.rename_firewall import RenameFirewall
+from app.application.use_cases.report_firewall_command_result import (
+    ReportFirewallCommandResult,
+)
 from app.application.use_cases.request_password_reset import RequestPasswordReset
 from app.application.use_cases.reset_password import ResetPassword
 from app.application.use_cases.resolve_finding import ResolveFinding
+from app.application.use_cases.rollback_firewall_command import RollbackFirewallCommand
 from app.application.use_cases.rotate_token import RotateToken
 from app.core.config import settings
 from app.infrastructure.database import get_db
@@ -42,10 +50,12 @@ from app.infrastructure.repositories import (
     SqlAlchemyAlertChannelRepository,
     SqlAlchemyAlertRuleRepository,
     SqlAlchemyFindingRepository,
+    SqlAlchemyFirewallCommandRepository,
     SqlAlchemyFirewallRepository,
     SqlAlchemyOrganizationRepository,
     SqlAlchemyPasswordResetTokenRepository,
     SqlAlchemyRefreshTokenRepository,
+    SqlAlchemyRemoteChangeLogRepository,
     SqlAlchemySnapshotRepository,
     SqlAlchemySubscriptionRepository,
     SqlAlchemyUnitOfWork,
@@ -297,6 +307,68 @@ def get_process_stripe_webhook(
         subscriptions=SqlAlchemySubscriptionRepository(session),
         webhook_events=SqlAlchemyWebhookEventRepository(session),
         gateway=get_payment_gateway(),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_create_firewall_command(
+    session: AsyncSession = Depends(get_db),
+) -> CreateFirewallCommand:
+    return CreateFirewallCommand(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        firewall_commands=SqlAlchemyFirewallCommandRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+        ttl_minutes=settings.firewall_command_ttl_minutes,
+    )
+
+
+def get_confirm_firewall_command(
+    session: AsyncSession = Depends(get_db),
+) -> ConfirmFirewallCommand:
+    return ConfirmFirewallCommand(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        firewall_commands=SqlAlchemyFirewallCommandRepository(session),
+        users=SqlAlchemyUserRepository(session),
+        verifier=Argon2PasswordVerifier(),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+def get_list_firewall_commands(
+    session: AsyncSession = Depends(get_db),
+) -> ListFirewallCommands:
+    return ListFirewallCommands(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        firewall_commands=SqlAlchemyFirewallCommandRepository(session),
+    )
+
+
+def get_rollback_firewall_command(
+    session: AsyncSession = Depends(get_db),
+) -> RollbackFirewallCommand:
+    return RollbackFirewallCommand(
+        firewalls=SqlAlchemyFirewallRepository(session),
+        firewall_commands=SqlAlchemyFirewallCommandRepository(session),
+        remote_change_logs=SqlAlchemyRemoteChangeLogRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+        ttl_minutes=settings.firewall_command_ttl_minutes,
+    )
+
+
+def get_poll_firewall_commands(
+    session: AsyncSession = Depends(get_db),
+) -> PollFirewallCommands:
+    return PollFirewallCommands(
+        firewall_commands=SqlAlchemyFirewallCommandRepository(session),
+    )
+
+
+def get_report_firewall_command_result(
+    session: AsyncSession = Depends(get_db),
+) -> ReportFirewallCommandResult:
+    return ReportFirewallCommandResult(
+        firewall_commands=SqlAlchemyFirewallCommandRepository(session),
+        remote_change_logs=SqlAlchemyRemoteChangeLogRepository(session),
         uow=SqlAlchemyUnitOfWork(session),
     )
 

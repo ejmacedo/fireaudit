@@ -12,9 +12,11 @@ from app.domain.entities import (
     AlertRule,
     Finding,
     Firewall,
+    FirewallCommand,
     Organization,
     PasswordResetToken,
     RefreshToken,
+    RemoteChangeLog,
     Snapshot,
     Subscription,
     User,
@@ -820,6 +822,160 @@ class SqlAlchemyAlertDeliveryRepository:
         )
         result = await self._session.execute(stmt)
         return [_alert_delivery_from_orm(row) for row in result.scalars().all()]
+
+
+def _firewall_command_from_orm(row: models.FirewallCommand) -> FirewallCommand:
+    return FirewallCommand(
+        id=row.id,
+        firewall_id=row.firewall_id,
+        user_id=row.user_id,
+        command_type=row.command_type,
+        payload=row.payload,
+        preview=row.preview,
+        status=row.status,
+        confirmed_at=row.confirmed_at,
+        expires_at=row.expires_at,
+        created_at=row.created_at,
+        applied_at=row.applied_at,
+    )
+
+
+def _remote_change_log_from_orm(row: models.RemoteChangeLog) -> RemoteChangeLog:
+    return RemoteChangeLog(
+        id=row.id,
+        firewall_command_id=row.firewall_command_id,
+        firewall_id=row.firewall_id,
+        user_id=row.user_id,
+        before_state=row.before_state,
+        after_state=row.after_state,
+        applied_at=row.applied_at,
+        rolled_back_at=row.rolled_back_at,
+        rolled_back_by_user_id=row.rolled_back_by_user_id,
+        record_hash=row.record_hash,
+    )
+
+
+class SqlAlchemyFirewallCommandRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, command: FirewallCommand) -> FirewallCommand:
+        row = models.FirewallCommand(
+            id=command.id,
+            firewall_id=command.firewall_id,
+            user_id=command.user_id,
+            command_type=command.command_type,
+            payload=command.payload,
+            preview=command.preview,
+            status=command.status,
+            confirmed_at=command.confirmed_at,
+            expires_at=command.expires_at,
+            applied_at=command.applied_at,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _firewall_command_from_orm(row)
+
+    async def get_by_id(self, command_id: uuid.UUID) -> FirewallCommand | None:
+        row = await self._session.get(models.FirewallCommand, command_id)
+        return _firewall_command_from_orm(row) if row else None
+
+    async def update_status(
+        self,
+        command_id: uuid.UUID,
+        *,
+        status: str,
+        confirmed_at: datetime | None = None,
+        applied_at: datetime | None = None,
+    ) -> FirewallCommand:
+        row = await self._session.get(models.FirewallCommand, command_id)
+        if row is None:
+            raise ValueError(f"FirewallCommand {command_id} not found")
+        row.status = status
+        if confirmed_at is not None:
+            row.confirmed_at = confirmed_at
+        if applied_at is not None:
+            row.applied_at = applied_at
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _firewall_command_from_orm(row)
+
+    async def list_for_firewall(self, firewall_id: uuid.UUID) -> list[FirewallCommand]:
+        stmt = (
+            select(models.FirewallCommand)
+            .where(models.FirewallCommand.firewall_id == firewall_id)
+            .order_by(models.FirewallCommand.created_at.desc())
+        )
+        result = await self._session.execute(stmt)
+        return [_firewall_command_from_orm(row) for row in result.scalars().all()]
+
+    async def list_sent_to_agent(self, firewall_id: uuid.UUID) -> list[FirewallCommand]:
+        stmt = select(models.FirewallCommand).where(
+            models.FirewallCommand.firewall_id == firewall_id,
+            models.FirewallCommand.status == "sent_to_agent",
+        )
+        result = await self._session.execute(stmt)
+        return [_firewall_command_from_orm(row) for row in result.scalars().all()]
+
+
+class SqlAlchemyRemoteChangeLogRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, log: RemoteChangeLog) -> RemoteChangeLog:
+        row = models.RemoteChangeLog(
+            id=log.id,
+            firewall_command_id=log.firewall_command_id,
+            firewall_id=log.firewall_id,
+            user_id=log.user_id,
+            before_state=log.before_state,
+            after_state=log.after_state,
+            applied_at=log.applied_at,
+            rolled_back_at=log.rolled_back_at,
+            rolled_back_by_user_id=log.rolled_back_by_user_id,
+            record_hash=log.record_hash,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _remote_change_log_from_orm(row)
+
+    async def get_latest_for_firewall(self, firewall_id: uuid.UUID) -> RemoteChangeLog | None:
+        stmt = (
+            select(models.RemoteChangeLog)
+            .where(models.RemoteChangeLog.firewall_id == firewall_id)
+            .order_by(models.RemoteChangeLog.applied_at.desc())
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        row = result.scalar_one_or_none()
+        return _remote_change_log_from_orm(row) if row else None
+
+    async def list_for_firewall(self, firewall_id: uuid.UUID) -> list[RemoteChangeLog]:
+        stmt = (
+            select(models.RemoteChangeLog)
+            .where(models.RemoteChangeLog.firewall_id == firewall_id)
+            .order_by(models.RemoteChangeLog.applied_at.asc())
+        )
+        result = await self._session.execute(stmt)
+        return [_remote_change_log_from_orm(row) for row in result.scalars().all()]
+
+    async def mark_rolled_back(
+        self,
+        log_id: uuid.UUID,
+        *,
+        rolled_back_by_user_id: uuid.UUID,
+        rolled_back_at: datetime,
+    ) -> RemoteChangeLog:
+        row = await self._session.get(models.RemoteChangeLog, log_id)
+        if row is None:
+            raise ValueError(f"RemoteChangeLog {log_id} not found")
+        row.rolled_back_at = rolled_back_at
+        row.rolled_back_by_user_id = rolled_back_by_user_id
+        await self._session.flush()
+        await self._session.refresh(row)
+        return _remote_change_log_from_orm(row)
 
 
 class SqlAlchemyUnitOfWork:

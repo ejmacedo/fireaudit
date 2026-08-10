@@ -11,9 +11,11 @@ from app.domain.entities import (
     AlertRule,
     Finding,
     Firewall,
+    FirewallCommand,
     Organization,
     PasswordResetToken,
     RefreshToken,
+    RemoteChangeLog,
     Snapshot,
     Subscription,
     User,
@@ -223,3 +225,31 @@ class PaymentGateway(Protocol):
         customer_id: str,
         return_url: str,
     ) -> BillingPortalSession: ...
+
+
+class FirewallCommandRepository(Protocol):
+    async def create(self, command: FirewallCommand) -> FirewallCommand: ...
+    async def get_by_id(self, command_id: uuid.UUID) -> FirewallCommand | None: ...
+    async def update_status(
+        self,
+        command_id: uuid.UUID,
+        *,
+        status: str,
+        confirmed_at: datetime | None = None,
+        applied_at: datetime | None = None,
+    ) -> FirewallCommand: ...
+    async def list_for_firewall(self, firewall_id: uuid.UUID) -> list[FirewallCommand]: ...
+    async def list_sent_to_agent(self, firewall_id: uuid.UUID) -> list[FirewallCommand]: ...
+
+
+class RemoteChangeLogRepository(Protocol):
+    async def create(self, log: RemoteChangeLog) -> RemoteChangeLog: ...
+    async def get_latest_for_firewall(self, firewall_id: uuid.UUID) -> RemoteChangeLog | None: ...
+    async def list_for_firewall(self, firewall_id: uuid.UUID) -> list[RemoteChangeLog]: ...
+    async def mark_rolled_back(
+        self,
+        log_id: uuid.UUID,
+        *,
+        rolled_back_by_user_id: uuid.UUID,
+        rolled_back_at: datetime,
+    ) -> RemoteChangeLog: ...

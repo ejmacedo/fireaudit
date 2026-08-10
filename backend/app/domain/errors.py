@@ -88,3 +88,31 @@ class AlertRuleNotFoundError(DomainError):
 
 class InvalidAlertRuleOperatorError(DomainError):
     """The alert rule operator is not one of the allowed values (gt, gte, lt, lte, eq)."""
+
+
+class FirewallCommandNotFoundError(DomainError):
+    """Firewall command not found or does not belong to the given firewall/organization."""
+
+
+class InvalidFirewallCommandTypeError(DomainError):
+    """The command_type is not one of the allowed values (create_rule, update_rule, delete_rule)."""
+
+
+class FirewallCommandNotPendingError(DomainError):
+    """The command is not in pending_confirmation status (already confirmed/applied/expired)."""
+
+
+class FirewallCommandExpiredError(DomainError):
+    """The command has passed its expires_at timestamp."""
+
+
+class FirewallCommandNotAwaitingResultError(DomainError):
+    """The command is not in sent_to_agent status, so its result cannot be reported."""
+
+
+class NoRemoteChangeToRollBackError(DomainError):
+    """No applied RemoteChangeLog exists yet for this firewall."""
+
+
+class ChangeAlreadyRolledBackError(DomainError):
+    """The most recent RemoteChangeLog for this firewall was already rolled back."""

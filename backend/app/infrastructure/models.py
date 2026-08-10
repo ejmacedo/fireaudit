@@ -298,7 +298,7 @@ class FirewallCommand(Base):
     __tablename__ = "firewall_commands"
     __table_args__ = (
         CheckConstraint(
-            "command_type IN ('create_rule', 'update_rule', 'delete_rule')",
+            "command_type IN ('create_rule', 'update_rule', 'delete_rule', 'rollback')",
             name="chk_firewall_command_type",
         ),
         CheckConstraint(
@@ -321,10 +321,12 @@ class FirewallCommand(Base):
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     preview: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="pending_confirmation")
-    confirmed_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    expires_at: Mapped[datetime] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
-    applied_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )
+    applied_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
 
 
 class RemoteChangeLog(Base):
@@ -344,8 +346,8 @@ class RemoteChangeLog(Base):
     )
     before_state: Mapped[dict] = mapped_column(JSONB, nullable=False)
     after_state: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    applied_at: Mapped[datetime] = mapped_column(nullable=False)
-    rolled_back_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    applied_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    rolled_back_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     rolled_back_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

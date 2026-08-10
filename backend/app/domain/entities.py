@@ -158,3 +158,32 @@ class AlertDelivery:
     status: str = "pending"
     sent_at: datetime | None = None
     error: str | None = None
+
+
+@dataclass
+class FirewallCommand:
+    firewall_id: uuid.UUID
+    user_id: uuid.UUID
+    command_type: str
+    payload: dict
+    expires_at: datetime
+    id: uuid.UUID = field(default_factory=_new_id)
+    preview: dict | None = None
+    status: str = "pending_confirmation"
+    confirmed_at: datetime | None = None
+    created_at: datetime | None = None
+    applied_at: datetime | None = None
+
+
+@dataclass
+class RemoteChangeLog:
+    firewall_command_id: uuid.UUID
+    firewall_id: uuid.UUID
+    user_id: uuid.UUID
+    before_state: dict
+    after_state: dict
+    applied_at: datetime
+    record_hash: str
+    id: uuid.UUID = field(default_factory=_new_id)
+    rolled_back_at: datetime | None = None
+    rolled_back_by_user_id: uuid.UUID | None = None

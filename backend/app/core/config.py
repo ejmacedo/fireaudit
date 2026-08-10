@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     agent_offline_threshold_minutes: int = 30
     expiring_cert_threshold_days: int = 30
 
+    # Remote management (firewall_commands)
+    firewall_command_ttl_minutes: int = 15
+
     # Environment
     environment: str = "development"
 
